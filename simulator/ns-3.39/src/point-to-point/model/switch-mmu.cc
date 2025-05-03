@@ -355,7 +355,7 @@ int64_t SwitchMmu::GetNowTime(){
 }
 
 std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
-    return "headroom_p" + std::to_string(port) + "_q" + std::to_string(qIndex) + ".csv";
+    return "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 //预测完从文本文件读取 暂时顶替ai黑盒
