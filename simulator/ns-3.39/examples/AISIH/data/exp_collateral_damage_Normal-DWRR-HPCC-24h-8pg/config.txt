@@ -53,24 +53,24 @@ DELAY_WIEN 0
 RATE_BOUND 1
 
 
-TOPOLOGY_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/topo.txt
-FLOW_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/flow.txt
-TRACE_FILE examples/DSH/trace.txt
-TRACE_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/trace.tr
-FCT_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/fct.txt
-PFC_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/pfc.txt
-PACKET_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/packet.txt
-BUFFER_FILE mexamples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/buffer_in.txt
-BUFFER_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/buffer.txt
-DROP_OR_PAUSE_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/drop_or_pause.txt
-QLEN_MON_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/qlen.txt
-THPUT_MON_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/throughput.txt
-ILEN_MON_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/ilen.txt
-HEADROOM_MON_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/headroom.txt
-FLOW_STATUS_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/flow_status_in.txt
-FLOW_STATUS_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/flow_status.txt
-HDRM_LOCAL_MAX_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/hdrm_local_max_value_in.txt
-HDRM_LOCAL_MAX_OUTPUT_FILE examples/DSH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/hdrm_local_max_value.txt
+TOPOLOGY_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/topo.txt
+FLOW_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/flow.txt
+TRACE_FILE examples/AISIH/trace.txt
+TRACE_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/trace.tr
+FCT_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/fct.txt
+PFC_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/pfc.txt
+PACKET_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/packet.txt
+BUFFER_FILE mexamples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/buffer_in.txt
+BUFFER_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/buffer.txt
+DROP_OR_PAUSE_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/drop_or_pause.txt
+QLEN_MON_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/qlen.txt
+THPUT_MON_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/throughput.txt
+ILEN_MON_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/ilen.txt
+HEADROOM_MON_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/headroom.txt
+FLOW_STATUS_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/flow_status_in.txt
+FLOW_STATUS_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/flow_status.txt
+HDRM_LOCAL_MAX_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/hdrm_local_max_value_in.txt
+HDRM_LOCAL_MAX_OUTPUT_FILE examples/AISIH/data/exp_collateral_damage_Normal-DWRR-HPCC-24h-8pg/hdrm_local_max_value.txt
 
 SIMULATOR_STOP_TIME 2.0036
 BUFFER_SIZE 16

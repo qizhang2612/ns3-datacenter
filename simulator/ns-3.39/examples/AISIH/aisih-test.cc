@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
 	//uint32_t algorithm = 3;
 	//uint32_t windowCheck = 1;
 	uint32_t mmuKind = 1;
-	std::string confFile = "/home/jcma/aisih/ns3-datacenter/simulator/ns-3.39/examples/DSH/data/exp_collateral_damage_DSH-DWRR-HPCC-25h-8pg/config.txt";
+	std::string confFile = "/home/laozhang/aisih/ns3-datacenter/simulator/ns-3.39/examples/AISIH/data/exp_collateral_damage_DSH-DWRR-HPCC-25h-8pg/config.txt";
 	CommandLine cmd;
 	cmd.AddValue("conf", "config file path", confFile);
 	cmd.AddValue("mmuKind", "windowCheck", mmuKind);
@@ -1109,10 +1109,6 @@ int main(int argc, char *argv[])
 			// uint32_t headroom = 58610;
 			// sw->m_mmu->SetHeadroom(headroom);
 			for (uint32_t j = 1; j < sw->GetNDevices(); j++) {
-				/*modification begin*/
-			    // if(sw->m_mmu_kind == SwitchNode::Adaptive) 
-				// 	Simulator::Schedule(Seconds(1.0), &SwitchNode::SendMeasurement, sw, j);
-				/*modification end*/
 				Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(sw->GetDevice(j));
 				// set ecn
 				uint64_t rate = dev->GetDataRate().GetBitRate();
@@ -1144,12 +1140,6 @@ int main(int argc, char *argv[])
 				}
 			}
 			uint64_t totalHeadroom = sw->m_mmu->xoffTotal;
-			// if(sw->m_mmu_kind == SwitchNode::DSH || sw->m_mmu_kind == SwitchNode::DSHnoSH || sw->m_mmu_kind == SwitchNode::QASH || sw->m_mmu_kind == SwitchNode::DSHPLUS)
-			// 	totalHeadroom = 1824640;
-			// else if(sw->m_mmu_kind == SwitchNode::Normal)
-			// 	totalHeadroom = 13128640;
-			// else if(sw->m_mmu_kind == SwitchNode::Adaptive)
-			//     totalHeadroom = 12786655;
 			std::cout<< "totalHeadroom: " << totalHeadroom << std::endl;
 			std::cout << "buffer size: " << buffer_size << std::endl;
 			sw->m_mmu->SetBufferPool(buffer_size * 1024 * 1024);

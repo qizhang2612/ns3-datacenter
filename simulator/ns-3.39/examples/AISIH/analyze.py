@@ -75,14 +75,14 @@ def qct_fct(test_name: str):
 
 
 def list_fqct():
-    mmus = ['Normal', 'DSH']
+    mmus = ['Normal', 'AISIH']
     ccs = ['HPCC', 'PowerTCP', 'DCQCN']
-    col = [ 'SIH(avg)', 'DSH(avg)', 
-            'SIH(p99)', 'DSH(p99)', 
-            'SIH(L-avg)', 'DSH(L-avg)', 
-            'SIH(M-avg)', 'DSH(M-avg)', 
-            'SIH(S-avg)', 'DSH(S-avg)', 
-            'SIH(S-p99)', 'DSH(S-p99)']
+    col = [ 'SIH(avg)', 'AISIH(avg)', 
+            'SIH(p99)', 'AISIH(p99)', 
+            'SIH(L-avg)', 'AISIH(L-avg)', 
+            'SIH(M-avg)', 'AISIH(M-avg)', 
+            'SIH(S-avg)', 'AISIH(S-avg)', 
+            'SIH(S-p99)', 'AISIH(S-p99)']
     hpcc = DataFrame(columns=mmus)
     power = DataFrame(columns=mmus)
     dcqcn = DataFrame(columns=mmus)
@@ -273,14 +273,14 @@ def pfc_deadlock(test_name: str):
                     deadlock = 0
 
     mmu = 'Normal'
-    if test_name.find('DSHPLUS') != -1:
-        mmu = 'DSHPLUS'
-    elif test_name.find('DSH') != -1:
-        mmu = 'DSH'
-    elif test_name.find('Adaptive') != -1:
-        mmu = 'Adaptive'
-    elif test_name.find('QASH') != -1:
-        mmu = 'QASH'
+    if test_name.find('AISIH') != -1:
+        mmu = 'AISIH'
+    # elif test_name.find('DSH') != -1:
+    #     mmu = 'DSH'
+    # elif test_name.find('Adaptive') != -1:
+    #     mmu = 'Adaptive'
+    # elif test_name.find('QASH') != -1:
+    #     mmu = 'QASH'
     
     cc = 'None'
     if test_name.find('HPCC') != -1:

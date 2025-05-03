@@ -16,22 +16,24 @@ def run(test_name: str, capture: bool = False) -> CompletedProcess:
     
     # mmu
     mmu_kind = 1
-    if test_name.find('DSHnoSH') != -1:
-        mmu_kind = 3
-    elif test_name.find('DSHnoIH') != -1:
-        mmu_kind = 4
-    elif test_name.find('DSHPLUS') != -1:
-        mmu_kind = 6
-    elif test_name.find('DSH') != -1:
+    if test_name.find('AISIH') != -1:
         mmu_kind = 2
-    elif test_name.find('QASH') != -1:
-        mmu_kind = 5
-    elif test_name.find('Adaptive') != -1:
-        mmu_kind = 7
-    elif test_name.find('Normal50') != -1:
-        mmu_kind = 8
-    elif test_name.find('Normal80') != -1:
-        mmu_kind = 9
+    # if test_name.find('DSHnoSH') != -1:
+    #     mmu_kind = 3
+    # elif test_name.find('DSHnoIH') != -1:
+    #     mmu_kind = 4
+    # elif test_name.find('DSHPLUS') != -1:
+    #     mmu_kind = 6
+    # elif test_name.find('DSH') != -1:
+    #     mmu_kind = 2
+    # elif test_name.find('QASH') != -1:
+    #     mmu_kind = 5
+    # elif test_name.find('Adaptive') != -1:
+    #     mmu_kind = 7
+    # elif test_name.find('Normal50') != -1:
+    #     mmu_kind = 8
+    # elif test_name.find('Normal80') != -1:
+    #     mmu_kind = 9
     
     # cc
     cc_mode = 'None'
