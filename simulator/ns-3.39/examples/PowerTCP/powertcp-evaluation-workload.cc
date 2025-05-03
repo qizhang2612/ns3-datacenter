@@ -36,6 +36,7 @@
 #include <ns3/rdma-driver.h>
 #include <ns3/switch-node.h>
 #include <ns3/sim-setting.h>
+#include "ns3/flow-monitor-module.h"
 
 #include <cmath>
 #include <fstream>
@@ -195,11 +196,27 @@ uint32_t ip_to_node_id(Ipv4Address ip) {
 }
 
 void qp_finish(FILE* fout, Ptr<RdmaQueuePair> q) {
+	//std::cout << "----------- " << *fout << " ----------------" << std::endl;
 	uint32_t sid = ip_to_node_id(q->sip), did = ip_to_node_id(q->dip);
 	uint64_t base_rtt = pairRtt[sid][did], b = pairBw[sid][did];
 	uint32_t total_bytes = q->m_size + ((q->m_size - 1) / packet_payload_size + 1) * (CustomHeader::GetStaticWholeHeaderSize() - IntHeader::GetStaticSize()); // translate to the minimum bytes required (with header but no INT)
 	uint64_t standalone_fct = base_rtt + total_bytes * 8 * 1e9 / b;
+	//fct:流的完成时间，baseFCT：理想化的完成时间
 	std::cout << "FCT " << (Simulator::Now() - q->startTime).GetNanoSeconds() << " size " << q->m_size << " baseFCT " << standalone_fct << std::endl;
+	// 打开或创建名为 fct.txt 的文件进行追加写入
+    std::ofstream outfile("fct.txt", std::ios_base::app);
+    if (outfile.is_open()) {
+        // 将信息写入文件
+        outfile << "FCT " << (Simulator::Now() - q->startTime).GetNanoSeconds()
+                << " size " << q->m_size
+                << " baseFCT " << standalone_fct 
+				<< " stopTime " << q->stopTime << std::endl;
+        // 关闭文件
+        outfile.close();
+    } else {
+        // 错误处理：无法打开文件
+        std::cerr << "Unable to open file: fct.txt" << std::endl;
+    }
 
 	// remove rxQp from the receiver
 	Ptr<Node> dstNode = n.Get(did);
@@ -210,6 +227,21 @@ void qp_finish(FILE* fout, Ptr<RdmaQueuePair> q) {
 
 void get_pfc(FILE* fout, Ptr<QbbNetDevice> dev, uint32_t type) {
 	fprintf(fout, "%lu %u %u %u %u\n", Simulator::Now().GetTimeStep(), dev->GetNode()->GetId(), dev->GetNode()->GetNodeType(), dev->GetIfIndex(), type);
+	// // 打开或创建名为 pfc.txt 的文件进行追加写入
+    // std::ofstream outfile("pfc.txt", std::ios_base::app);
+    // if (outfile.is_open()) {
+    //     // 将信息写入文件
+    //     outfile << Simulator::Now().GetTimeStep() << " "
+    //             << dev->GetNode()->GetId() << " "
+    //             << dev->GetNode()->GetNodeType() << " "
+    //             << dev->GetIfIndex() << " "
+    //             << type << std::endl;
+    //     // 关闭文件
+    //     outfile.close();
+    // } else {
+    //     // 错误处理：无法打开文件
+    //     std::cerr << "Unable to open file: pfc.txt" << std::endl;
+    // }
 }
 
 struct QlenDistribution {
@@ -566,7 +598,7 @@ int main(int argc, char *argv[])
 	double load = 0.2;
 
 
-
+	//requestSize调整为和buffer的比例
 	uint32_t requestSize = 1000000;
 	double queryRequestRate = 1;
 	uint32_t incast = 5;
@@ -574,8 +606,8 @@ int main(int argc, char *argv[])
 	uint32_t algorithm = 3;
 	uint32_t windowCheck = 1;
 
-	std::string confFile = "/home/vamsi/src/phd/codebase/ns3-datacenter/simulator/ns-3.39/examples/PowerTCP/config-workload.txt";
-	std::string cdfFileName = "/home/vamsi/src/phd/codebase/ns3-datacenter/simulator/ns-3.39/examples/PowerTCP/websearch.txt";
+	std::string confFile = "/home/laozhang/ns3-datacenter/simulator/ns-3.39/examples/PowerTCP/config-workload.txt";
+	std::string cdfFileName = "/home/laozhang/ns3-datacenter/simulator/ns-3.39/examples/PowerTCP/websearch.txt";
 
 	unsigned randomSeed = 7;
 
@@ -1013,7 +1045,8 @@ int main(int argc, char *argv[])
 	rem->SetAttribute("ErrorRate", DoubleValue(error_rate_per_link));
 	rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
 
-	FILE *pfc_file = fopen(pfc_output_file.c_str(), "w");
+	//FILE *pfc_file = fopen(pfc_output_file.c_str(), "w");
+	std::cout << "PFC output file: " << pfc_output_file << std::endl;
 
 	QbbHelper qbb;
 	Ipv4AddressHelper ipv4;
@@ -1334,8 +1367,15 @@ int main(int argc, char *argv[])
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 	std::cout << "Running Simulation.\n";
 	NS_LOG_INFO("Run Simulation.");
+
+	// // Flow monitor
+	// Ptr<FlowMonitor> flowMonitor;
+	// FlowMonitorHelper flowHelper;
+	// flowMonitor = flowHelper.InstallAll();
+
 	Simulator::Stop(Seconds(END_TIME));
 	Simulator::Run();
+	//flowMonitor->SerializeToXmlFile("flow-monitor-workload.xml", true, true);
 	Simulator::Destroy();
 	NS_LOG_INFO("Done.");
 

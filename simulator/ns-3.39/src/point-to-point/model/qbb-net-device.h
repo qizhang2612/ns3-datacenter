@@ -145,7 +145,7 @@ public:
 	TracedCallback<Ptr<const Packet>, uint32_t> m_traceEnqueue;
 	TracedCallback<Ptr<const Packet>, uint32_t> m_traceDequeue;
 	TracedCallback<Ptr<const Packet>, uint32_t> m_traceDrop;
-	TracedCallback<uint32_t> m_tracePfc; // 0: resume, 1: pause
+	TracedCallback<uint32_t, unsigned> m_tracePfc; // 0: resume, 1: pause
 	uint64_t getTxBytes(){
 				uint64_t temp=numTxBytes;
 				numTxBytes=0;

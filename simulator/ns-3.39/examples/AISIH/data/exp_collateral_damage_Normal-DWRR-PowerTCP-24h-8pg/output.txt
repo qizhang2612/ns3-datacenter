@@ -1,0 +1,16 @@
+[  0%] Building CXX object examples/AISIH/CMakeFiles/aisih-test.dir/aisih-test.cc.o
+[  0%] Linking CXX executable ../../../build/examples/AISIH/ns3.39-aisih-test-optimized
+Traceback (most recent call last):
+  File "/home/laozhang/ns3-datacenter/simulator/ns-3.39/./ns3", line 1615, in <module>
+    main()
+  File "/home/laozhang/ns3-datacenter/simulator/ns-3.39/./ns3", line 1610, in main
+    run_step(args, target_to_run, target_args)
+  File "/home/laozhang/ns3-datacenter/simulator/ns-3.39/./ns3", line 1222, in run_step
+    subprocess.run(program_arguments, env=proc_env, cwd=working_dir, shell=use_shell, check=True)
+  File "/usr/lib/python3.10/subprocess.py", line 503, in run
+    with Popen(*popenargs, **kwargs) as process:
+  File "/usr/lib/python3.10/subprocess.py", line 971, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.10/subprocess.py", line 1863, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+OSError: [Errno 26] Text file busy: '/home/laozhang/ns3-datacenter/simulator/ns-3.39/build/examples/AISIH/ns3.39-aisih-test-optimized'

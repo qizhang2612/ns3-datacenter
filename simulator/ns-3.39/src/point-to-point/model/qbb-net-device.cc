@@ -508,10 +508,10 @@ QbbNetDevice::Receive(Ptr<Packet> packet)
 		if (!m_qbbEnabled) return;
 		unsigned qIndex = ch.pfc.qIndex;
 		if (ch.pfc.time > 0) {
-			m_tracePfc(1);
+			m_tracePfc(1, qIndex);
 			m_paused[qIndex] = true;
 		} else {
-			m_tracePfc(0);
+			m_tracePfc(0, qIndex);
 			Resume(qIndex);
 		}
 	} else { // non-PFC packets (data, ACK, NACK, CNP...)
@@ -609,7 +609,7 @@ void QbbNetDevice::SendPfc(uint32_t qIndex, uint32_t type) {
 	AddHeader(p, 0x800);
 	CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header | CustomHeader::L4_Header);
 	p->PeekHeader(ch);
-	m_tracePfc(type+2); // 2 indicates PFC PAUSE sent.3 indicates RESUME sent
+	// m_tracePfc(type+2); // 2 indicates PFC PAUSE sent.3 indicates RESUME sent
 	SwitchSend(0, p, ch);
 }
 

@@ -55,10 +55,15 @@ TypeId SwitchNode::GetTypeId (void)
 	return tid;
 }
 
-SwitchNode::SwitchNode() {
+SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
 	m_ecmpSeed = m_id;
 	m_node_type = 1;
-	m_mmu = CreateObject<SwitchMmu>();
+	switch (m_mmu_kind)
+    {
+    case Normal:
+      m_mmu = CreateObject<SwitchMmu> ();
+      break;
+    }
 	for (uint32_t i = 0; i < pCnt; i++)
 		for (uint32_t j = 0; j < pCnt; j++)
 			for (uint32_t k = 0; k < qCnt; k++)
@@ -110,9 +115,9 @@ int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch) {
 
 void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex) {
 	Ptr<QbbNetDevice> device = DynamicCast<QbbNetDevice>(m_devices[inDev]);
-	if (m_mmu->CheckShouldPause(inDev, qIndex)) {
+		if (m_mmu->CheckShouldPause(inDev, qIndex)) {
 		device->SendPfc(qIndex, 0);
-		// std::cout << "sending PFC" << std::endl;
+			// std::cout << "sending PFC" << std::endl;
 		m_mmu->SetPause(inDev, qIndex);
 	}
 }
@@ -121,7 +126,7 @@ void SwitchNode::CheckAndSendResume(uint32_t inDev, uint32_t qIndex) {
 	if (m_mmu->CheckShouldResume(inDev, qIndex)) {
 		device->SendPfc(qIndex, 1);
 		m_mmu->SetResume(inDev, qIndex);
-	}
+    }
 }
 
 void SwitchNode::SendToDev(Ptr<Packet>p, CustomHeader &ch) {
@@ -245,6 +250,7 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 		m_mmu->RemoveFromIngressAdmission(inDev, qIndex, p->GetSize(), found);
 		m_mmu->RemoveFromEgressAdmission(ifIndex, qIndex, p->GetSize(), found);
 		m_bytes[inDev][ifIndex][qIndex] -= p->GetSize();
+		m_mmu->egress_th_bytes[ifIndex] += p->GetSize ();
 		if (m_ecnEnabled) {
 			bool egressCongested = m_mmu->ShouldSendCN(ifIndex, qIndex);
 			if (egressCongested) {

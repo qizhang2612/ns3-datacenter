@@ -173,6 +173,7 @@ uint32_t ip_to_node_id(Ipv4Address ip){
 }
 
 void qp_finish(FILE* fout, Ptr<RdmaQueuePair> q){
+	std::cout<<"QP finished------------"<<fout<<std::endl;
 	uint32_t sid = ip_to_node_id(q->sip), did = ip_to_node_id(q->dip);
 	uint64_t base_rtt = pairRtt[sid][did], b = pairBw[sid][did];
 	uint32_t total_bytes = q->m_size + ((q->m_size-1) / packet_payload_size + 1) * (CustomHeader::GetStaticWholeHeaderSize() - IntHeader::GetStaticSize()); // translate to the minimum bytes required (with header but no INT)
@@ -397,7 +398,7 @@ int main(int argc, char *argv[])
 
 		uint32_t algorithm=3;
 		uint32_t windowCheck=1;
-		std::string confFile = "/home/vamsi/src/phd/codebase/ns3-datacenter/simulator/ns-3.39/examples/PowerTCP/config-fairness.txt";
+		std::string confFile = "/home/laozhang/ns3-datacenter/simulator/ns-3.39/examples/PowerTCP/config-fairness.txt";
 
 		std::cout << confFile;
 		CommandLine cmd;

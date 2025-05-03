@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <ns3/node.h>
+#include "ns3/nstime.h"
 
 namespace ns3 {
 
@@ -16,6 +17,16 @@ public:
 	static TypeId GetTypeId (void);
 
 	SwitchMmu(void);
+
+	//zqadd
+	uint64_t GetAIHeadroom();
+	void UpdateHeadroom();
+	int64_t GetNowTime(); //ms
+	//uint64_t qLength[pCnt][qCnt];
+	std::ofstream csvFile;
+    bool headerWritten = false;
+	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time);
+	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
 
 	bool CheckIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
 	bool CheckEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
@@ -107,8 +118,26 @@ public:
 
 	uint64_t ReverieThreshold(uint32_t port, uint32_t qIndex, uint32_t type, uint32_t unsched);
 
+	virtual void PrintInfo ();
+	
 	void UpdateLpfCounters();
+	/*modification begin*/
+	uint64_t RecordPortThroughput (uint32_t port);
+	/*modification end*/
 
+	void SetUseAI(bool use);
+
+	bool GetUseAI();
+
+
+	//是否使用AI预测
+	bool useAI;
+	int64_t lastUpdateTime;
+	int64_t pqTime[pCnt][qCnt];
+	int64_t pauseTime[pCnt][qCnt];
+	int64_t pauseStartTime[pCnt][qCnt];
+	
+	
 
 	// config
 	uint32_t node_id;
@@ -176,9 +205,10 @@ public:
 	double Reveriegamma;
 	uint32_t lpfUpdatedOnce;
 
+	uint64_t egress_th_bytes[pCnt]; 
+
 };
 
 } /* namespace ns3 */
 
 #endif /* SWITCH_MMU_H */
-

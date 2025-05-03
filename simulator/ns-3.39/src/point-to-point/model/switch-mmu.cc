@@ -99,6 +99,9 @@ SwitchMmu::SwitchMmu(void) {
 			xon[port][q] = 1248; // For pfc resume. Can be changed using SetXon
 			xon_offset[port][q] = 2496; // For pfc resume. Can be changed using SetXonOffset
 
+			pqTime[port][q]=0;
+			pauseTime[port][q]=0;
+			pauseStartTime[port][q]=0;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -196,8 +199,8 @@ SwitchMmu::SetReserved(uint64_t b, uint32_t port, uint32_t q, std::string inout)
 void
 SwitchMmu::SetReserved(uint64_t b, std::string inout) {
 	if (inout == "ingress") {
-		for (uint32_t port = 0; port < pCnt; port++) {
-			for (uint32_t q = 0; q < qCnt ; q++) {
+		for (uint32_t port = 1; port <= portCount; port++) {
+			for (uint32_t q = 1; q < qCnt ; q++) {
 				if (totalIngressReserved >= reserveIngress[port][q])
 					totalIngressReserved -= reserveIngress[port][q];
 				else
@@ -258,8 +261,8 @@ SwitchMmu::SetHeadroom(uint64_t b, uint32_t port, uint32_t q) {
 // This function allows for setting headroom for all queues in oneshot. When ever this is set, the xoffTotal (total headroom) is updated.
 void
 SwitchMmu::SetHeadroom(uint64_t b) {
-	for (uint32_t port = 0; port < pCnt; port++) {
-		for (uint32_t q = 0; q < qCnt; q++) {
+	for (uint32_t port = 1; port <= portCount; port++) {
+		for (uint32_t q = 1; q < qCnt; q++) {
 			xoffTotal -= xoff[port][q];
 			xoff[port][q] = b;
 			xoffTotal += xoff[port][q];
@@ -334,22 +337,129 @@ uint64_t SwitchMmu::GetIngressReservedUsed(uint32_t port, uint32_t qIndex) {
 uint64_t SwitchMmu::GetIngressSharedUsed() {
 	return (totalUsed - xoffTotalUsed - totalIngressReservedUsed);
 }
+uint64_t SwitchMmu::RecordPortThroughput(uint32_t port)
+{
+	uint64_t result = egress_th_bytes[port];
+  	egress_th_bytes[port] = 0;
+  	return result;
+}
+
+int64_t SwitchMmu::GetNowTime(){
+    return Simulator::Now().GetMilliSeconds();
+}
+
+//更新对应的净空缓存
+void SwitchMmu::UpdateHeadroom(){
+
+}
+
+//获取因AI调节增大的共享缓存空间,实在不行可以预测完从文本文件读取
+uint64_t SwitchMmu::GetAIHeadroom(){
+	return xoffTotalUsed;
+}
+
+void SwitchMmu::SetUseAI(bool use){
+	useAI = use;
+}
+
+bool SwitchMmu::GetUseAI(){
+	return useAI;
+}
+
+//记录队列状态信息
+void SwitchMmu::WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time){
+	bool pfcStopStatus;
+	if(xoffUsed[port][qIndex] >  0){
+		pfcStopStatus = true;
+	}else{
+		pfcStopStatus = false;
+	}
+	//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<length<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<std::endl;
+	// bool pfcStopStatus = xoffUsed[port][qIndex] > 0;
+
+    // // Create a file name based on port and qIndex.
+    // std::string fileName = "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    
+    // // Open or create the CSV file for appending if not already open. Each unique port-qIndex pair will have its own file.
+    // std::ofstream csvFile;
+    // csvFile.open(fileName, std::ios_base::out | std::ios_base::app);
+    // if (!csvFile.is_open()) {
+    //     std::cerr << "Unable to open file " << fileName << " for writing." << std::endl;
+    //     return;
+    // }
+
+    // // Check and write the header only once per file.
+    // static std::unordered_map<std::string, bool> headersWritten; // Keep track of whether the header has been written for each file.
+    // if (headersWritten.find(fileName) == headersWritten.end() || !headersWritten[fileName]) {
+    //     csvFile << "port,qIndex,length,time,pfcStopStatus\n";
+    //     headersWritten[fileName] = true; // Mark this file's header as written.
+    // }
+
+    // // Write data in CSV format.
+    // csvFile << port << "," << qIndex << "," << length << "," << time << "," << pfcStopStatus << "\n";
+    // csvFile.flush(); 
+
+    // // No need to explicitly close the file as it remains open for subsequent writes.
+    // csvFile.close(); // However, closing the file after writing ensures that the resources are freed.
+}
+
+void SwitchMmu::UpdataPauseTime(uint32_t port, uint32_t qIndex){
+	int64_t pqNowTime = GetNowTime();
+	if (xoffTotalUsed != 0){
+		pauseStartTime[port][qIndex] = pqNowTime;
+	}
+	if (xoffTotalUsed == 0 && pauseStartTime[port][qIndex] != 0){
+		if (pauseTime[port][qIndex] == 0){
+			pauseTime[port][qIndex] = pqNowTime - pauseStartTime[port][qIndex];
+		}else{
+			pauseTime[port][qIndex] += pqNowTime - pauseStartTime[port][qIndex];
+		}
+	}
+}
+
 
 // DT's threshold = Alpha x remaining.
 // A sky high threshold for a queue can be emulated by setting the corresponding alpha to a large value. eg., UINT32_MAX
 uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string inout, uint32_t type) {
 	if (inout == "ingress") {
-		double remaining = 0;
-		uint64_t ingressPoolSharedUsed = GetIngressSharedUsed(); // Total bytes used from the ingress "shared" pool specifically.
-		uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
-		if (ingressSharedPool > ingressPoolSharedUsed) {
-			uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
-			return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
+		int64_t pqNowTime = GetNowTime();
+		if(pqTime[port][qIndex] != pqNowTime){
+			WriteQueueLengthAndTimeEveryCycle(port, qIndex, ingress_bytes[port][qIndex], GetNowTime());
+			pqTime[port][qIndex] = pqNowTime;
+			std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" ingress_bytes:"<<ingress_bytes[port][qIndex]<<" pqTime:"<<pqTime[port][qIndex]<<std::endl;
 		}
-		else {
-			// ingressPoolShared is full. There is no `remaining` buffer in ingressPoolShared.
-			// DT's threshold returns zero in this case, but using if else just to avoid threshold computations even in the simple case.
-			return 0;
+		UpdataPauseTime(port, qIndex);
+		
+		if (GetUseAI()){
+			// std::cout << "GetUseAI" << std::endl;
+			double remaining = 0;
+			uint64_t ingressPoolSharedUsed = GetIngressSharedUsed(); // Total bytes used from the ingress "shared" pool specifically.
+			uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
+			if (ingressSharedPool > ingressPoolSharedUsed) {
+				UpdateHeadroom();
+				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom();
+				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
+			}
+			else {
+				// ingressPoolShared is full. There is no `remaining` buffer in ingressPoolShared.
+				// DT's threshold returns zero in this case, but using if else just to avoid threshold computations even in the simple case.
+				return 0;
+			}
+		}else{
+			double remaining = 0;
+			uint64_t ingressPoolSharedUsed = GetIngressSharedUsed(); // Total bytes used from the ingress "shared" pool specifically.
+			uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
+			std::cout << "ingressPool: " << ingressPool << " totalIngressReserved: " << totalIngressReserved << std::endl;
+			if (ingressSharedPool > ingressPoolSharedUsed) {
+				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
+				//std::cout << "remaining: " << remaining << " ingressSharedPool: " << ingressSharedPool << " ingressPoolSharedUsed:" << ingressPoolSharedUsed << " alpha: "<< alphaIngress[port][qIndex] << std::endl;
+				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
+			}
+			else {
+				// ingressPoolShared is full. There is no `remaining` buffer in ingressPoolShared.
+				// DT's threshold returns zero in this case, but using if else just to avoid threshold computations even in the simple case.
+				return 0;
+			}
 		}
 	}
 	else if (inout == "egress") {
@@ -414,6 +524,7 @@ double SwitchMmu::getDequeueRate(uint32_t port, uint32_t qIndex, std::string ino
 	else if (inout == "egress") {
 		return dequeueRateEgress[port][qIndex];
 	}
+	//输出到文件内
 	return 0;
 }
 void SwitchMmu::updateDequeueRates() {
@@ -870,6 +981,7 @@ void SwitchMmu::UpdateIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t 
 			else if (model=="reverie"){
 				temp = ingressLpf_bytes[port][qIndex];
 			}
+			// std::cout << "temp: " << temp << "threshold: " << threshold << std::endl;
 			if (temp > threshold) {
 				// LOL: The commented part below was a HUGE mistake identified after debugging some of the lossless packets being dropped. It was a good lesson.
 				// xoffUsed[port][qIndex] += ingress_bytes[port][qIndex] - threshold;
@@ -1008,6 +1120,7 @@ uint64_t SwitchMmu::GetHdrmBytes(uint32_t port, uint32_t qIndex) {
 }
 
 bool SwitchMmu::CheckShouldPause(uint32_t port, uint32_t qIndex) {
+	// std:: cout << "CheckShouldPause: " << GetHdrmBytes(port, qIndex) << std::endl;
 	return !paused[port][qIndex] && (GetHdrmBytes(port, qIndex) > 0);
 }
 
@@ -1026,6 +1139,7 @@ bool SwitchMmu::CheckShouldResume(uint32_t port, uint32_t qIndex) {
 }
 
 void SwitchMmu::SetPause(uint32_t port, uint32_t qIndex) {
+	// std::cout << "Set Pause" << std::endl;
 	paused[port][qIndex] = true;
 }
 void SwitchMmu::SetResume(uint32_t port, uint32_t qIndex) {
@@ -1048,6 +1162,26 @@ void SwitchMmu::ConfigEcn(uint32_t port, uint32_t _kmin, uint32_t _kmax, double 
 	kmin[port] = _kmin * 1000;
 	kmax[port] = _kmax * 1000;
 	pmax[port] = _pmax;
+}
+
+void
+SwitchMmu::PrintInfo ()
+{
+	std::cout << "========================================" << std::endl;
+	std::cout << "SWITCH " << node_id << " INFO:" << std::endl;
+	std::cout << "  TOTAL BUFFER: " << bufferPool << " B" << std::endl;
+	std::cout << "  TOTAL INGRESSPOOL: " << ingressPool << " B" << std::endl;
+	std::cout << "  TOTAL HEADROOM: " << xoffTotal << " B" << std::endl;
+	std::cout << "  TOTAL RESERVED: " << totalIngressReserved << " B" << std::endl;
+	std::cout << "----------------------------------------" << std::endl;
+
+	for (uint32_t port = 1; port <= portCount; ++port) {
+		std::cout << "Port " << port << ":" << std::endl;
+		for (uint32_t q = 1; q < qCnt; ++q) {
+			std::cout << "  Queue " << q << ": Headroom = " << xoff[port][q] << " B" << std::endl;
+		}
+		std::cout << "----------------------------------------" << std::endl;
+	}
 }
 
 }
