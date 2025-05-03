@@ -139,6 +139,8 @@ public:
 	int64_t pauseTime[pCnt][qCnt];
 	int64_t pauseStartTime[pCnt][qCnt];
 	uint64_t aiHeadroom[pCnt][qCnt];
+	int64_t index[pCnt][qCnt];
+	uint64_t lastHeadroom[pCnt][qCnt];
 	
 	
 

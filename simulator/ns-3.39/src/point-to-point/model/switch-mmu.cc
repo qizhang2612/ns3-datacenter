@@ -105,6 +105,8 @@ SwitchMmu::SwitchMmu(void) {
 			pauseTime[port][q]=0;
 			pauseStartTime[port][q]=0;
 			aiHeadroom[port][q] = 0;
+			index[port][q] = 1;
+			lastHeadroom[port][q]=0;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -268,6 +270,7 @@ SwitchMmu::SetHeadroom(uint64_t b) {
 		for (uint32_t q = 1; q < qCnt; q++) {
 			xoffTotal -= xoff[port][q];
 			xoff[port][q] = b;
+			lastHeadroom[port][q] = b;
 			xoffTotal += xoff[port][q];
 		}
 	}
@@ -355,6 +358,7 @@ std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
     return "headroom_p" + std::to_string(port) + "_q" + std::to_string(qIndex) + ".csv";
 }
 
+//预测完从文本文件读取 暂时顶替ai黑盒
 void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index){
 	    // 获取CSV文件路径
 		std::string filePath = GetCsvFilePath(port, qIndex);
@@ -390,6 +394,10 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index){
 						double headroom = std::stod(tokens[3]);
 	
 						if (csvPort == port && csvQIndex == qIndex) {
+							//判断是否处于暂停状态，只能调大headroom
+							if (xoffTotalUsed > 0){
+								headroom = headroom>xoff[port][qIndex]?headroom:xoff[port][qIndex];
+							}
 							aiHeadroom[csvPort][csvQIndex] = headroom;
 						}
 					} catch (const std::exception& e) {
@@ -409,12 +417,15 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index){
 
 //更新对应的净空缓存
 void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
+	ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
+	index[port][qIndex]++;
+	lastHeadroom[port][qIndex] = xoff[port][qIndex];
 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
 }
 
-//获取因AI调节增大的共享缓存空间,实在不行可以预测完从文本文件读取
+//获取因AI调节增大的共享缓存空间
 uint64_t SwitchMmu::GetAIHeadroom(uint32_t port, uint32_t qIndex){
-	return aiHeadroom[port][qIndex];
+	return xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
 }
 
 void SwitchMmu::SetUseAI(bool use){
@@ -497,8 +508,8 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
 				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 200){
 					UpdateHeadroom(port, qIndex);
-					remaining += GetAIHeadroom(port, qIndex);
 				}
+				remaining += GetAIHeadroom(port, qIndex);
 				lastUpdateTime = pqNowTime;
 				//uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom(port, qIndex);
 				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
