@@ -19,14 +19,16 @@ public:
 	SwitchMmu(void);
 
 	//zqadd
-	uint64_t GetAIHeadroom();
-	void UpdateHeadroom();
+	uint64_t GetAIHeadroom(uint32_t port, uint32_t qIndex);
+	void UpdateHeadroom(uint32_t port, uint32_t qIndex);
 	int64_t GetNowTime(); //ms
 	//uint64_t qLength[pCnt][qCnt];
 	std::ofstream csvFile;
     bool headerWritten = false;
 	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time);
 	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
+	void ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index);
+	std::string GetCsvFilePath(uint32_t port, uint32_t qIndex) const;
 
 	bool CheckIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
 	bool CheckEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
@@ -136,6 +138,7 @@ public:
 	int64_t pqTime[pCnt][qCnt];
 	int64_t pauseTime[pCnt][qCnt];
 	int64_t pauseStartTime[pCnt][qCnt];
+	uint64_t aiHeadroom[pCnt][qCnt];
 	
 	
 

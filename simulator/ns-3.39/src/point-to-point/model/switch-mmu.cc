@@ -74,6 +74,8 @@ SwitchMmu::SwitchMmu(void) {
 	totalIngressReserved = 0;
 	totalIngressReservedUsed = 0;
 
+	lastUpdateTime = 0;
+
 
 	// aggregate run time
 	// `totalUsed` IMPORTANT TO NOTE: THIS IS NOT bytes in the "ingress pool".
@@ -102,6 +104,7 @@ SwitchMmu::SwitchMmu(void) {
 			pqTime[port][q]=0;
 			pauseTime[port][q]=0;
 			pauseStartTime[port][q]=0;
+			aiHeadroom[port][q] = 0;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -348,14 +351,70 @@ int64_t SwitchMmu::GetNowTime(){
     return Simulator::Now().GetMilliSeconds();
 }
 
-//更新对应的净空缓存
-void SwitchMmu::UpdateHeadroom(){
+std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
+    return "headroom_p" + std::to_string(port) + "_q" + std::to_string(qIndex) + ".csv";
+}
 
+void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index){
+	    // 获取CSV文件路径
+		std::string filePath = GetCsvFilePath(port, qIndex);
+
+		std::ifstream file(filePath);
+		if (!file.is_open()) {
+			throw std::runtime_error("Failed to open CSV file: " + filePath);
+		}
+	
+		std::string line;
+		int currentLine = 0;
+	
+		// 跳过标题行（假设第一行为标题）
+		if (std::getline(file, line)) {
+			currentLine++;
+		}
+	
+		// 读取到指定行
+		while (std::getline(file, line)) {
+			if (currentLine == index) {
+				std::istringstream ss(line);
+				std::string token;
+				std::vector<std::string> tokens;
+	
+				while (std::getline(ss, token, ',')) {
+					tokens.push_back(token);
+				}
+	
+				if (tokens.size() >= 4) {
+					try {
+						uint32_t csvPort = std::stoul(tokens[1]);
+						uint32_t csvQIndex = std::stoul(tokens[2]);
+						double headroom = std::stod(tokens[3]);
+	
+						if (csvPort == port && csvQIndex == qIndex) {
+							aiHeadroom[csvPort][csvQIndex] = headroom;
+						}
+					} catch (const std::exception& e) {
+						throw std::runtime_error("Error parsing CSV line: " + std::string(e.what()));
+					}
+				}
+				break;
+			}
+			currentLine++;
+		}
+	
+		if (currentLine != index + 1) {
+			throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
+		}
+}
+
+
+//更新对应的净空缓存
+void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
+	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
 }
 
 //获取因AI调节增大的共享缓存空间,实在不行可以预测完从文本文件读取
-uint64_t SwitchMmu::GetAIHeadroom(){
-	return xoffTotalUsed;
+uint64_t SwitchMmu::GetAIHeadroom(uint32_t port, uint32_t qIndex){
+	return aiHeadroom[port][qIndex];
 }
 
 void SwitchMmu::SetUseAI(bool use){
@@ -429,15 +488,19 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 			std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" ingress_bytes:"<<ingress_bytes[port][qIndex]<<" pqTime:"<<pqTime[port][qIndex]<<std::endl;
 		}
 		UpdataPauseTime(port, qIndex);
-		
 		if (GetUseAI()){
 			// std::cout << "GetUseAI" << std::endl;
 			double remaining = 0;
 			uint64_t ingressPoolSharedUsed = GetIngressSharedUsed(); // Total bytes used from the ingress "shared" pool specifically.
 			uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
 			if (ingressSharedPool > ingressPoolSharedUsed) {
-				UpdateHeadroom();
-				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom();
+				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
+				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 200){
+					UpdateHeadroom(port, qIndex);
+					remaining += GetAIHeadroom(port, qIndex);
+				}
+				lastUpdateTime = pqNowTime;
+				//uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom(port, qIndex);
 				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
 			}
 			else {
@@ -1179,6 +1242,7 @@ SwitchMmu::PrintInfo ()
 		std::cout << "Port " << port << ":" << std::endl;
 		for (uint32_t q = 1; q < qCnt; ++q) {
 			std::cout << "  Queue " << q << ": Headroom = " << xoff[port][q] << " B" << std::endl;
+			std::cout << "  Queue " << q << ": PauseTime = " << pauseTime[port][q] << " B" << std::endl;
 		}
 		std::cout << "----------------------------------------" << std::endl;
 	}
