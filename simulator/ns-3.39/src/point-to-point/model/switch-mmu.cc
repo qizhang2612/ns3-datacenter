@@ -391,7 +391,8 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index){
 					try {
 						uint32_t csvPort = std::stoul(tokens[1]);
 						uint32_t csvQIndex = std::stoul(tokens[2]);
-						double headroom = std::stod(tokens[3]);
+						double headroomRate = std::stod(tokens[3]);
+						double headroom = headroomRate * xoff[port][qIndex];
 	
 						if (csvPort == port && csvQIndex == qIndex) {
 							//判断是否处于暂停状态，只能调大headroom
@@ -438,36 +439,36 @@ bool SwitchMmu::GetUseAI(){
 
 //记录队列状态信息
 void SwitchMmu::WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time){
-	bool pfcStopStatus;
-	if(xoffUsed[port][qIndex] >  0){
-		pfcStopStatus = true;
-	}else{
-		pfcStopStatus = false;
-	}
+	// bool pfcStopStatus;
+	// if(xoffUsed[port][qIndex] >  0){
+	// 	pfcStopStatus = true;
+	// }else{
+	// 	pfcStopStatus = false;
+	// }
 	//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<length<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<std::endl;
-	// bool pfcStopStatus = xoffUsed[port][qIndex] > 0;
+	bool pfcStopStatus = xoffUsed[port][qIndex] > 0;
 
-    // // Create a file name based on port and qIndex.
-    // std::string fileName = "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    // Create a file name based on port and qIndex.
+    std::string fileName = "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
     
-    // // Open or create the CSV file for appending if not already open. Each unique port-qIndex pair will have its own file.
-    // std::ofstream csvFile;
-    // csvFile.open(fileName, std::ios_base::out | std::ios_base::app);
-    // if (!csvFile.is_open()) {
-    //     std::cerr << "Unable to open file " << fileName << " for writing." << std::endl;
-    //     return;
-    // }
+    // Open or create the CSV file for appending if not already open. Each unique port-qIndex pair will have its own file.
+    std::ofstream csvFile;
+    csvFile.open(fileName, std::ios_base::out | std::ios_base::app);
+    if (!csvFile.is_open()) {
+        std::cerr << "Unable to open file " << fileName << " for writing." << std::endl;
+        return;
+    }
 
-    // // Check and write the header only once per file.
-    // static std::unordered_map<std::string, bool> headersWritten; // Keep track of whether the header has been written for each file.
-    // if (headersWritten.find(fileName) == headersWritten.end() || !headersWritten[fileName]) {
-    //     csvFile << "port,qIndex,length,time,pfcStopStatus\n";
-    //     headersWritten[fileName] = true; // Mark this file's header as written.
-    // }
+    // Check and write the header only once per file.
+    static std::unordered_map<std::string, bool> headersWritten; // Keep track of whether the header has been written for each file.
+    if (headersWritten.find(fileName) == headersWritten.end() || !headersWritten[fileName]) {
+        csvFile << "port,qIndex,length,time,pfcStopStatus\n";
+        headersWritten[fileName] = true; // Mark this file's header as written.
+    }
 
-    // // Write data in CSV format.
-    // csvFile << port << "," << qIndex << "," << length << "," << time << "," << pfcStopStatus << "\n";
-    // csvFile.flush(); 
+    // Write data in CSV format.
+    csvFile << port << "," << qIndex << "," << length << "," << time << "," << pfcStopStatus << "\n";
+    csvFile.flush(); 
 
     // // No need to explicitly close the file as it remains open for subsequent writes.
     // csvFile.close(); // However, closing the file after writing ensures that the resources are freed.
