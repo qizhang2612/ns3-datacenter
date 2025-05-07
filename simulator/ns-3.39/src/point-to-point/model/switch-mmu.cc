@@ -359,61 +359,64 @@ std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
 }
 
 //预测完从文本文件读取 暂时顶替ai黑盒
-void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index){
-	    // 获取CSV文件路径
-		std::string filePath = GetCsvFilePath(port, qIndex);
+void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
+    // 动态构建CSV文件路径
+    std::string filePath = GetCsvFilePath(port, qIndex);
 
-		std::ifstream file(filePath);
-		if (!file.is_open()) {
-			throw std::runtime_error("Failed to open CSV file: " + filePath);
-		}
-	
-		std::string line;
-		int currentLine = 0;
-	
-		// 跳过标题行（假设第一行为标题）
-		if (std::getline(file, line)) {
-			currentLine++;
-		}
-	
-		// 读取到指定行
-		while (std::getline(file, line)) {
-			if (currentLine == index) {
-				std::istringstream ss(line);
-				std::string token;
-				std::vector<std::string> tokens;
-	
-				while (std::getline(ss, token, ',')) {
-					tokens.push_back(token);
-				}
-	
-				if (tokens.size() >= 4) {
-					try {
-						uint32_t csvPort = std::stoul(tokens[1]);
-						uint32_t csvQIndex = std::stoul(tokens[2]);
-						double headroomRate = std::stod(tokens[3]);
-						double headroom = headroomRate * xoff[port][qIndex];
-	
-						if (csvPort == port && csvQIndex == qIndex) {
-							//判断是否处于暂停状态，只能调大headroom
-							if (xoffTotalUsed > 0){
-								headroom = headroom>xoff[port][qIndex]?headroom:xoff[port][qIndex];
-							}
-							aiHeadroom[csvPort][csvQIndex] = headroom;
-						}
-					} catch (const std::exception& e) {
-						throw std::runtime_error("Error parsing CSV line: " + std::string(e.what()));
-					}
-				}
-				break;
-			}
-			currentLine++;
-		}
-	
-		if (currentLine != index + 1) {
-			throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
-		}
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open CSV file: " + filePath);
+    }
+
+    std::string line;
+    int currentLine = 0;
+
+    // 跳过标题行（假设第一行为标题）
+    if (std::getline(file, line)) {
+        currentLine++;
+    }
+
+    // 定位到目标行并解析数据
+    while (std::getline(file, line)) {
+        if (currentLine == index) {
+            std::istringstream ss(line);
+            std::string token;
+            std::vector<std::string> tokens;
+
+            // 按逗号分隔CSV字段
+            while (std::getline(ss, token, ',')) {
+                tokens.push_back(token);
+            }
+
+            // 验证数据完整性（仅需检查headroomRate字段存在）
+            if (!tokens.empty()) {
+                try {
+                    double headroomRate = std::stod(tokens[0]);  // 唯一有效字段
+                    uint64_t headroom = headroomRate * xoff[port][qIndex];
+
+                    // 暂停状态下的headroom调整策略
+                    if (xoffTotalUsed > 0) {
+                        headroom = headroom > xoff[port][qIndex]?headroom:xoff[port][qIndex];
+                    }
+
+                    aiHeadroom[port][qIndex] = headroom;
+                    break;  // 成功处理后退出循环
+                } catch (const std::exception& e) {
+                    throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
+                }
+            } else {
+                throw std::runtime_error("Empty line in CSV file at index: " + std::to_string(index));
+            }
+        }
+        currentLine++;
+    }
+
+    // 校验文件是否包含足够行数
+    if (currentLine != index + 1) {
+        throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
+    }
 }
+
 
 
 //更新对应的净空缓存
@@ -425,8 +428,16 @@ void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
 }
 
 //获取因AI调节增大的共享缓存空间
-uint64_t SwitchMmu::GetAIHeadroom(uint32_t port, uint32_t qIndex){
-	return xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
+//修改到获取所有的
+uint64_t SwitchMmu::GetAIHeadroom(){
+	uint64_t result = 0;
+	for (uint32_t port = 1; port <= portCount; port++) {
+		for (uint32_t qIndex = 1; qIndex < qCnt; qIndex++) {
+			result += xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
+		}
+	}
+	return result;
+	//return xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
 }
 
 void SwitchMmu::SetUseAI(bool use){
@@ -507,10 +518,10 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 			uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
 			if (ingressSharedPool > ingressPoolSharedUsed) {
 				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
-				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 200){
+				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 10){
 					UpdateHeadroom(port, qIndex);
 				}
-				remaining += GetAIHeadroom(port, qIndex);
+				remaining += GetAIHeadroom();
 				lastUpdateTime = pqNowTime;
 				//uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom(port, qIndex);
 				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);

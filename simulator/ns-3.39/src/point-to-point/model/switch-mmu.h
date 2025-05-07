@@ -19,7 +19,7 @@ public:
 	SwitchMmu(void);
 
 	//zqadd
-	uint64_t GetAIHeadroom(uint32_t port, uint32_t qIndex);
+	uint64_t GetAIHeadroom();
 	void UpdateHeadroom(uint32_t port, uint32_t qIndex);
 	int64_t GetNowTime(); //ms
 	//uint64_t qLength[pCnt][qCnt];
