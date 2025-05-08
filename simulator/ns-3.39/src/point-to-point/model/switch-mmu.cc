@@ -357,7 +357,11 @@ int64_t SwitchMmu::GetNowTime(){
 }
 
 std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
-    return "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    return "AIHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+}
+
+std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
+    return "GHeadroom/g_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 //预测完从文本文件读取 暂时顶替ai黑盒
@@ -398,10 +402,10 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 
                     // 暂停状态下的headroom调整策略
                     if (xoffTotalUsed > 0) {
-                        headroom = headroom > xoff[port][qIndex]?headroom:xoff[port][qIndex];
+                        headroom = headroom > xoff[port][qIndex] ? headroom : xoff[port][qIndex];
                     }
 
-                    aiHeadroom[port][qIndex] = headroom;
+                    aiHeadroom[port][qIndex] = headroom + GetGHeadroom(port,qIndex,index);
                     break;  // 成功处理后退出循环
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
@@ -419,14 +423,63 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
     }
 }
 
-
-
 //更新对应的净空缓存
 void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
 	ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
 	index[port][qIndex]++;
 	lastHeadroom[port][qIndex] = xoff[port][qIndex];
 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
+}
+
+//获取余量headroom
+uint64_t SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
+	// 动态构建CSV文件路径
+    std::string filePath = GetGrsvFilePath(port,qIndex);
+
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open CSV file: " + filePath);
+    }
+
+    std::string line;
+    int currentLine = 0;
+
+    // 跳过标题行（假设第一行为标题）
+    if (std::getline(file, line)) {
+        currentLine++;
+    }
+
+    // 定位到目标行并解析数据
+    while (std::getline(file, line)) {
+        if (currentLine == index) {
+            std::istringstream ss(line);
+            std::string token;
+            std::vector<std::string> tokens;
+
+            // 按逗号分隔CSV字段
+            while (std::getline(ss, token, ',')) {
+                tokens.push_back(token);
+            }
+
+            // 验证数据完整性（仅需检查headroomRate字段存在）
+            if (!tokens.empty()) {
+                try {
+                    return std::stod(tokens[0]);  // 唯一有效字段
+                } catch (const std::exception& e) {
+                    throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
+                }
+            } else {
+                throw std::runtime_error("Empty line in CSV file at index: " + std::to_string(index));
+            }
+        }
+        currentLine++;
+    }
+
+    // 校验文件是否包含足够行数
+    if (currentLine != index + 1) {
+        throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
+    }
+
 }
 
 //获取因AI调节增大的共享缓存空间

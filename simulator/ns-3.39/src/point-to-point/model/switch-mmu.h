@@ -19,6 +19,7 @@ public:
 	SwitchMmu(void);
 
 	//zqadd
+	uint64_t GetGHeadroom(uint32_t port, uint32_t qIndex,int index);
 	uint64_t GetAIHeadroom();
 	void UpdateHeadroom(uint32_t port, uint32_t qIndex);
 	int64_t GetNowTime(); //ms
@@ -30,6 +31,7 @@ public:
 	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
 	void ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index);
 	std::string GetCsvFilePath(uint32_t port, uint32_t qIndex) const;
+	std::string GetGrsvFilePath(uint32_t port, uint32_t qIndex) const;
 
 	bool CheckIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
 	bool CheckEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
