@@ -25,6 +25,7 @@ public:
 	//uint64_t qLength[pCnt][qCnt];
 	std::ofstream csvFile;
     bool headerWritten = false;
+	uint64_t firstHeadroom;
 	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time);
 	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
 	void ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index);

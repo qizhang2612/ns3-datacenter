@@ -107,6 +107,7 @@ SwitchMmu::SwitchMmu(void) {
 			aiHeadroom[port][q] = 0;
 			index[port][q] = 1;
 			lastHeadroom[port][q]=0;
+			firstHeadroom = 0;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -274,6 +275,7 @@ SwitchMmu::SetHeadroom(uint64_t b) {
 			xoffTotal += xoff[port][q];
 		}
 	}
+	firstHeadroom = b;
 }
 
 void
@@ -392,7 +394,7 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
             if (!tokens.empty()) {
                 try {
                     double headroomRate = std::stod(tokens[0]);  // 唯一有效字段
-                    uint64_t headroom = headroomRate * xoff[port][qIndex];
+                    uint64_t headroom = headroomRate * firstHeadroom;
 
                     // 暂停状态下的headroom调整策略
                     if (xoffTotalUsed > 0) {
@@ -450,36 +452,36 @@ bool SwitchMmu::GetUseAI(){
 
 //记录队列状态信息
 void SwitchMmu::WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time){
-	// bool pfcStopStatus;
-	// if(xoffUsed[port][qIndex] >  0){
-	// 	pfcStopStatus = true;
-	// }else{
-	// 	pfcStopStatus = false;
-	// }
+	bool pfcStopStatus;
+	if(xoffUsed[port][qIndex] >  0){
+		pfcStopStatus = true;
+	}else{
+		pfcStopStatus = false;
+	}
 	//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<length<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<std::endl;
-	bool pfcStopStatus = xoffUsed[port][qIndex] > 0;
+	// bool pfcStopStatus = xoffUsed[port][qIndex] > 0;
 
-    // Create a file name based on port and qIndex.
-    std::string fileName = "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    // // Create a file name based on port and qIndex.
+    // std::string fileName = "output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
     
-    // Open or create the CSV file for appending if not already open. Each unique port-qIndex pair will have its own file.
-    std::ofstream csvFile;
-    csvFile.open(fileName, std::ios_base::out | std::ios_base::app);
-    if (!csvFile.is_open()) {
-        std::cerr << "Unable to open file " << fileName << " for writing." << std::endl;
-        return;
-    }
+    // // Open or create the CSV file for appending if not already open. Each unique port-qIndex pair will have its own file.
+    // std::ofstream csvFile;
+    // csvFile.open(fileName, std::ios_base::out | std::ios_base::app);
+    // if (!csvFile.is_open()) {
+    //     std::cerr << "Unable to open file " << fileName << " for writing." << std::endl;
+    //     return;
+    // }
 
-    // Check and write the header only once per file.
-    static std::unordered_map<std::string, bool> headersWritten; // Keep track of whether the header has been written for each file.
-    if (headersWritten.find(fileName) == headersWritten.end() || !headersWritten[fileName]) {
-        csvFile << "port,qIndex,length,time,pfcStopStatus\n";
-        headersWritten[fileName] = true; // Mark this file's header as written.
-    }
+    // // Check and write the header only once per file.
+    // static std::unordered_map<std::string, bool> headersWritten; // Keep track of whether the header has been written for each file.
+    // if (headersWritten.find(fileName) == headersWritten.end() || !headersWritten[fileName]) {
+    //     csvFile << "port,qIndex,length,time,pfcStopStatus\n";
+    //     headersWritten[fileName] = true; // Mark this file's header as written.
+    // }
 
-    // Write data in CSV format.
-    csvFile << port << "," << qIndex << "," << length << "," << time << "," << pfcStopStatus << "\n";
-    csvFile.flush(); 
+    // // Write data in CSV format.
+    // csvFile << port << "," << qIndex << "," << length << "," << time << "," << pfcStopStatus << "\n";
+    // csvFile.flush(); 
 
     // // No need to explicitly close the file as it remains open for subsequent writes.
     // csvFile.close(); // However, closing the file after writing ensures that the resources are freed.
