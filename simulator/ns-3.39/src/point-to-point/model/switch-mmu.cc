@@ -361,7 +361,7 @@ std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
 }
 
 std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
-    return "GHeadroom/g_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    return "GHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 //预测完从文本文件读取 暂时顶替ai黑盒
