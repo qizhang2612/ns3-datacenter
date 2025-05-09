@@ -7,23 +7,23 @@ WORK_LOADS = ['search']
 BACK_LOADS = [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 #CC_KINDS = ['PowerTCP', 'DCQCN', 'HPCC', 'None']
 CC_KINDS = ['PowerTCP']
-POLICIES = ['DSHPLUS', 'Normal', 'Normal80', 'Adaptive']
+POLICIES = ['AISIH', 'Normal', 'Normal80', 'Adaptive']
 COLORS = {
-    'DSHPLUS': 'r', 
+    'AISIH': 'r', 
     'Normal': 'g',  # SIH
     'Normal50': 'b', 
     'Normal80': 'm', 
     'Adaptive': 'c'
 }
 MARKERS = {
-    'DSHPLUS': 'o', 
+    'AISIH': 'o', 
     'Normal': 'x',  # SIH
     'Normal50': 's', 
     'Normal80': '^', 
     'Adaptive': '*'
 }
 LINE_STYLES = {
-    'DSHPLUS': '-', 
+    'AISIH': '-', 
     'Normal': '--',  # SIH
     'Normal50': '-.', 
     'Normal80': ':', 
@@ -121,7 +121,7 @@ def process_workload(cc_kind, policy, work_load):
     for back_load in BACK_LOADS:
         burst_load = round(0.9 - back_load, 1)
         # 生成文件路径
-        if policy == "DSHPLUS":
+        if policy == "AISIH":
             policy_file = f'data-DSH60000/benchmark_search/exp_benchmark_fct-{work_load}-xpod_{policy}-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
         else:
             policy_file = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_{policy}-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'

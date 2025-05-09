@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 # 文件名  
 for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
-    # filename1 = f'data-final/collateral_damage/exp_collateral_damage_Adaptive-DWRR-{cc}-24h-8pg/throughput.txt'
+    #filename1 = f'data-final/collateral_damage/exp_collateral_damage_AISIH-DWRR-{cc}-24h-8pg/throughput.txt'
     filename2 = f'data/exp_collateral_damage_Normal-DWRR-{cc}-24h-8pg/throughput.txt'
     # filename3 = f'data-DSH60000/collateral_damage/exp_collateral_damage_DSHPLUS-DWRR-{cc}-24h-8pg/throughput.txt'
     

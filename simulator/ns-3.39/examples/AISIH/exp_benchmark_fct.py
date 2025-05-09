@@ -226,8 +226,8 @@ def main() -> None:
                 pgmap, quantums = PGMAPS[pg]
                 #for mmu in ['Normal', 'DSH']:
                 #for mmu in ['Normal', 'DSH', 'DSHnoSH', 'DSHnoIH']:
-               #for mmu in ['Normal', 'AISIH']:
-                for mmu in ['Normal']:
+                for mmu in ['Normal', 'AISIH']:
+                #for mmu in ['Normal']:
                 #for mmu in ['Normal', 'DSHPLUS']:
                     # for mmu in ['DH', 'DH3']:
                     ks : List[Any]
