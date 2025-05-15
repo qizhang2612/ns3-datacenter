@@ -17,6 +17,7 @@
 #include "ns3/custom-priority-tag.h"
 #include "ns3/feedback-tag.h"
 #include "ns3/unsched-tag.h"
+#include "ai-mmu.h"
 
 namespace ns3 {
 
@@ -62,6 +63,12 @@ SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
     {
     case Normal:
       m_mmu = CreateObject<SwitchMmu> ();
+      break;
+	case AISIH:
+      //m_mmu = CreateObject<AiMmu> ();
+	  m_mmu = CreateObject<SwitchMmu> ();
+	  m_mmu->SetUseAI(true);
+	  //std::cout<<"是否使用AI"<<m_mmu->GetUseAI()<<std::endl;
       break;
     }
 	for (uint32_t i = 0; i < pCnt; i++)

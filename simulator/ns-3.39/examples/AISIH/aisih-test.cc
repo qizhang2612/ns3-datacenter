@@ -879,6 +879,11 @@ int main(int argc, char *argv[])
 		mmu_kind = SwitchNode::Normal;
 		std::cout << "mmu:Normal" << std::endl;
 	}
+	else if(mmuKind == 2)
+	{
+		mmu_kind = SwitchNode::AISIH;
+		std::cout << "mmu:AISIH" << std::endl;
+	}
 	//std::cout << "mmuKind: " << mmuKind << std::endl;
 	// Set Pint
 	if (cc_mode == 10) {
@@ -1101,7 +1106,7 @@ int main(int argc, char *argv[])
 			sw->m_mmu->SetAlphaIngress(alpha);
 			sw->m_mmu->SetAlphaEgress(UINT16_MAX);
 			sw->m_mmu->SetReserved(3072, "ingress");
-			if(mmu_kind == SwitchNode::Normal)
+			if(mmu_kind == SwitchNode::Normal || mmu_kind == SwitchNode::AISIH)
 			{
 				uint32_t headroom = 60000;
 				sw->m_mmu->SetHeadroom(headroom);
@@ -1130,7 +1135,7 @@ int main(int argc, char *argv[])
 				{
 					sw->m_mmu->SetReserved(3072, j, qu, "ingress");
 				}
-				if(sw->m_mmu_kind == SwitchNode::Normal)
+				if(sw->m_mmu_kind == SwitchNode::Normal || sw->m_mmu_kind == SwitchNode::AISIH)
 				{
 					headroom = 60000;
 					for (uint32_t qu = 1; qu < 8; qu++) {

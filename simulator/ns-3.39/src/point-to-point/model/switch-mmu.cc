@@ -357,11 +357,11 @@ int64_t SwitchMmu::GetNowTime(){
 }
 
 std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
-    return "AIHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    return "headroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
-    return "GHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    return "gHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 //预测完从文本文件读取 暂时顶替ai黑盒
@@ -567,13 +567,13 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 		}
 		UpdataPauseTime(port, qIndex);
 		if (GetUseAI()){
-			// std::cout << "GetUseAI" << std::endl;
+			//std::cout << "GetUseAI" << std::endl;
 			double remaining = 0;
 			uint64_t ingressPoolSharedUsed = GetIngressSharedUsed(); // Total bytes used from the ingress "shared" pool specifically.
 			uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
 			if (ingressSharedPool > ingressPoolSharedUsed) {
 				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
-				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 10){
+				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 1){
 					UpdateHeadroom(port, qIndex);
 				}
 				remaining += GetAIHeadroom();
