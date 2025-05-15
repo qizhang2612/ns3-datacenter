@@ -137,7 +137,8 @@ public:
 
 	//是否使用AI预测
 	bool useAI;
-	int64_t lastUpdateTime;
+	//int64_t lastUpdateTime;
+	int64_t lastUpdateTime[pCnt][qCnt];
 	int64_t pqTime[pCnt][qCnt];
 	int64_t pauseTime[pCnt][qCnt];
 	int64_t pauseStartTime[pCnt][qCnt];

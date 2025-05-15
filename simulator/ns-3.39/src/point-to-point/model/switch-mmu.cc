@@ -74,7 +74,7 @@ SwitchMmu::SwitchMmu(void) {
 	totalIngressReserved = 0;
 	totalIngressReservedUsed = 0;
 
-	lastUpdateTime = 0;
+	//lastUpdateTime = 0;
 
 
 	// aggregate run time
@@ -108,6 +108,7 @@ SwitchMmu::SwitchMmu(void) {
 			index[port][q] = 1;
 			lastHeadroom[port][q]=0;
 			firstHeadroom = 0;
+			lastUpdateTime[port][q] = 0;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -357,11 +358,11 @@ int64_t SwitchMmu::GetNowTime(){
 }
 
 std::string SwitchMmu::GetCsvFilePath(uint32_t port, uint32_t qIndex) const {
-    return "headroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    return "/home/qzhang/ns3-datacenter/simulator/ns-3.39/examples/AISIH/headroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
-    return "gHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
+    return "/home/qzhang/ns3-datacenter/simulator/ns-3.39/examples/AISIH/gHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
 //预测完从文本文件读取 暂时顶替ai黑盒
@@ -398,7 +399,8 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
             if (!tokens.empty()) {
                 try {
                     double headroomRate = std::stod(tokens[0]);  // 唯一有效字段
-                    uint64_t headroom = headroomRate * firstHeadroom;
+                    std::cout<<"headroomRate:"<<headroomRate<<std::endl;
+					uint64_t headroom = headroomRate * firstHeadroom;
 
                     // 暂停状态下的headroom调整策略
                     if (xoffTotalUsed > 0) {
@@ -406,7 +408,8 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
                     }
 
                     aiHeadroom[port][qIndex] = headroom + GetGHeadroom(port,qIndex,index);
-                    break;  // 成功处理后退出循环
+                    std::cout<<"port:"<<port<<"qIndex:"<<qIndex<<"aiHeadroom:"<<aiHeadroom[port][qIndex]<<std::endl;
+					break;  // 成功处理后退出循环
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
                 }
@@ -419,7 +422,8 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 
     // 校验文件是否包含足够行数
     if (currentLine != index + 1) {
-        throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
+		aiHeadroom[port][qIndex] = firstHeadroom / 8;
+        //throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
     }
 }
 
@@ -464,6 +468,7 @@ uint64_t SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
             // 验证数据完整性（仅需检查headroomRate字段存在）
             if (!tokens.empty()) {
                 try {
+					std::cout<<"gHeadroom:"<<tokens[0]<<std::endl;
                     return std::stod(tokens[0]);  // 唯一有效字段
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
@@ -573,11 +578,17 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 			uint64_t ingressSharedPool = ingressPool - totalIngressReserved;
 			if (ingressSharedPool > ingressPoolSharedUsed) {
 				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
-				if (lastUpdateTime != 0 && pqNowTime - lastUpdateTime > 1){
-					UpdateHeadroom(port, qIndex);
+				//std::cout<<"lastUpdateTime:"<<lastUpdateTime<<" pqNowTime:"<<pqNowTime<<std::endl;
+				if(lastUpdateTime[port][qIndex] == 0){
+					lastUpdateTime[port][qIndex] = pqNowTime;
 				}
+				if (lastUpdateTime[port][qIndex] != 0 && pqNowTime - lastUpdateTime[port][qIndex] >= 1){
+					std::cout<<"-----------UpdateHeadroom-----------"<<std::endl;
+					UpdateHeadroom(port, qIndex);
+					lastUpdateTime[port][qIndex] = pqNowTime;
+				}
+				std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<"lastUpdateTime:"<<lastUpdateTime[port][qIndex]<<" pqNowTime:"<<pqNowTime<<std::endl;
 				remaining += GetAIHeadroom();
-				lastUpdateTime = pqNowTime;
 				//uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom(port, qIndex);
 				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
 			}
