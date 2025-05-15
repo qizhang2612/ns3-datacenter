@@ -263,6 +263,7 @@ SwitchMmu::SetHeadroom(uint64_t b, uint32_t port, uint32_t q) {
 	xoffTotal -= xoff[port][q];
 	xoff[port][q] = b;
 	xoffTotal += xoff[port][q];
+
 }
 
 // This function allows for setting headroom for all queues in oneshot. When ever this is set, the xoffTotal (total headroom) is updated.
@@ -276,6 +277,7 @@ SwitchMmu::SetHeadroom(uint64_t b) {
 			xoffTotal += xoff[port][q];
 		}
 	}
+	//std::cout<<""<<<<std::endl;
 	firstHeadroom = b;
 }
 
@@ -367,6 +369,7 @@ std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
 
 //预测完从文本文件读取 暂时顶替ai黑盒
 void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
+	std::cout<<"对应的index:"<<index<<std::endl;
     // 动态构建CSV文件路径
     std::string filePath = GetCsvFilePath(port, qIndex);
 
@@ -408,7 +411,7 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
                     }
 
                     aiHeadroom[port][qIndex] = headroom + GetGHeadroom(port,qIndex,index);
-                    std::cout<<"port:"<<port<<"qIndex:"<<qIndex<<"aiHeadroom:"<<aiHeadroom[port][qIndex]<<std::endl;
+                    std::cout<<"port: "<<port<<"qIndex: "<<qIndex<<"aiHeadroom: "<<aiHeadroom[port][qIndex]<<std::endl;
 					break;  // 成功处理后退出循环
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
@@ -431,7 +434,7 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
 	ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
 	index[port][qIndex]++;
-	lastHeadroom[port][qIndex] = xoff[port][qIndex];
+	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
 }
 
@@ -491,11 +494,14 @@ uint64_t SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 //修改到获取所有的
 uint64_t SwitchMmu::GetAIHeadroom(){
 	uint64_t result = 0;
+	//std::cout<<"firstHeadroom: "<<firstHeadroom<<std::endl;
 	for (uint32_t port = 1; port <= portCount; port++) {
 		for (uint32_t qIndex = 1; qIndex < qCnt; qIndex++) {
-			result += xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
+			//result += xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
+			result += firstHeadroom-aiHeadroom[port][qIndex];
 		}
 	}
+	std::cout<<"AI调整后增加的缓存："<<result<<std::endl;
 	return result;
 	//return xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
 }
@@ -589,6 +595,7 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 				}
 				std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<"lastUpdateTime:"<<lastUpdateTime[port][qIndex]<<" pqNowTime:"<<pqNowTime<<std::endl;
 				remaining += GetAIHeadroom();
+				//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<"lastUpdateTime:"<<lastUpdateTime[port][qIndex]<<" pqNowTime:"<<pqNowTime<<std::endl;
 				//uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom(port, qIndex);
 				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
 			}
