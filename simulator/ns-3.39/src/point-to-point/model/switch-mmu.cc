@@ -402,16 +402,24 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
             if (!tokens.empty()) {
                 try {
                     double headroomRate = std::stod(tokens[0]);  // 唯一有效字段
+					if(headroomRate < 0){
+						headroomRate = 0;
+					}
                     std::cout<<"headroomRate:"<<headroomRate<<std::endl;
-					uint64_t headroom = headroomRate * firstHeadroom;
+					//uint64_t headroom = headroomRate * firstHeadroom;
 
                     // 暂停状态下的headroom调整策略
-                    if (xoffTotalUsed > 0) {
-                        headroom = headroom > xoff[port][qIndex] ? headroom : xoff[port][qIndex];
-                    }
+                    // if (xoffTotalUsed > 0) {
+                    //     headroom = headroom > xoff[port][qIndex] ? headroom : xoff[port][qIndex];
+                    // }
 
-                    aiHeadroom[port][qIndex] = headroom + GetGHeadroom(port,qIndex,index);
-                    std::cout<<"port: "<<port<<"qIndex: "<<qIndex<<"aiHeadroom: "<<aiHeadroom[port][qIndex]<<std::endl;
+                    //aiHeadroom[port][qIndex] = headroom + GetGHeadroom(port,qIndex,index);
+                    aiHeadroom[port][qIndex] = (headroomRate + GetGHeadroom(port,qIndex,index)) * firstHeadroom;
+
+					if (xoffTotalUsed > 0) {
+                        aiHeadroom[port][qIndex] = aiHeadroom[port][qIndex] > xoff[port][qIndex] ? aiHeadroom[port][qIndex] : xoff[port][qIndex];
+                    }
+					std::cout<<"port: "<<port<<"qIndex: "<<qIndex<<"aiHeadroom: "<<aiHeadroom[port][qIndex]<<std::endl;
 					break;  // 成功处理后退出循环
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
@@ -439,7 +447,7 @@ void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
 }
 
 //获取余量headroom
-uint64_t SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
+double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 	// 动态构建CSV文件路径
     std::string filePath = GetGrsvFilePath(port,qIndex);
 
@@ -471,8 +479,12 @@ uint64_t SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
             // 验证数据完整性（仅需检查headroomRate字段存在）
             if (!tokens.empty()) {
                 try {
-					std::cout<<"gHeadroom:"<<tokens[0]<<std::endl;
-                    return std::stod(tokens[0]);  // 唯一有效字段
+					double headroomRate = std::stod(tokens[0]); 
+					std::cout<<"gHeadroom:"<<headroomRate<<std::endl;
+					if(headroomRate < 0){
+						return 0.12;
+					}
+                    return headroomRate;  // 唯一有效字段
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Error parsing headroom rate: " + std::string(e.what()));
                 }
@@ -485,7 +497,8 @@ uint64_t SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 
     // 校验文件是否包含足够行数
     if (currentLine != index + 1) {
-        throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
+		return 0.0;
+        //throw std::runtime_error("CSV file does not have enough lines. Requested line: " + std::to_string(index));
     }
 
 }
