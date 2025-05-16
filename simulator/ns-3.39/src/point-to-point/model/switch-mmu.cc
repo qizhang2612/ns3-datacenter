@@ -409,6 +409,9 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 					if(headroomRate < 0){
 						headroomRate = 0;
 					}
+					if(headroomRate >= 1){
+						headroomRate = 1;
+					}
                     std::cout<<"headroomRate:"<<headroomRate<<std::endl;
 					//uint64_t headroom = headroomRate * firstHeadroom;
 
@@ -485,7 +488,7 @@ double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
                 try {
 					double headroomRate = std::stod(tokens[0]); 
 					std::cout<<"gHeadroom:"<<headroomRate<<std::endl;
-					if(headroomRate < 0){
+					if(headroomRate < 0 || headroomRate >= 0.12){
 						return 0.12;
 					}
                     return headroomRate;  // 唯一有效字段
@@ -607,7 +610,7 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 				if(lastUpdateTime[port][qIndex] == 0){
 					lastUpdateTime[port][qIndex] = pqNowTime;
 				}
-				if (lastUpdateTime[port][qIndex] != 0 && pqNowTime - lastUpdateTime[port][qIndex] >= 1){
+				if (lastUpdateTime[port][qIndex] != 0 && pqNowTime - lastUpdateTime[port][qIndex] >= 10){
 					std::cout<<"-----------UpdateHeadroom-----------"<<std::endl;
 					UpdateHeadroom(port, qIndex);
 					lastUpdateTime[port][qIndex] = pqNowTime;
