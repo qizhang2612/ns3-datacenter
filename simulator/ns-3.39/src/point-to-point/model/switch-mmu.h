@@ -23,11 +23,12 @@ public:
 	uint64_t GetAIHeadroom();
 	void UpdateHeadroom(uint32_t port, uint32_t qIndex);
 	int64_t GetNowTime(); //ms
+	uint64_t GetNowTimeWs(); //微秒
 	//uint64_t qLength[pCnt][qCnt];
 	std::ofstream csvFile;
     bool headerWritten = false;
 	uint64_t firstHeadroom;
-	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,int64_t time);
+	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,uint64_t time);
 	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
 	void ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index);
 	std::string GetCsvFilePath(uint32_t port, uint32_t qIndex) const;
@@ -138,12 +139,12 @@ public:
 	//是否使用AI预测
 	bool useAI;
 	//int64_t lastUpdateTime;
-	int64_t lastUpdateTime[pCnt][qCnt];
-	int64_t pqTime[pCnt][qCnt];
-	int64_t pauseTime[pCnt][qCnt];
-	int64_t pauseStartTime[pCnt][qCnt];
+	uint64_t lastUpdateTime[pCnt][qCnt];
+	uint64_t pqTime[pCnt][qCnt];
+	uint64_t pauseTime[pCnt][qCnt];
+	uint64_t pauseStartTime[pCnt][qCnt];
 	uint64_t aiHeadroom[pCnt][qCnt];
-	int64_t index[pCnt][qCnt];
+	uint64_t index[pCnt][qCnt];
 	uint64_t lastHeadroom[pCnt][qCnt];
 	
 	
