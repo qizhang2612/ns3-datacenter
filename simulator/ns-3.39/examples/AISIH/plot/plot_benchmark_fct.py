@@ -6,7 +6,8 @@ from collections import defaultdict
 WORK_LOADS = ['search']
 BACK_LOADS = [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 #CC_KINDS = ['PowerTCP', 'DCQCN', 'HPCC', 'None']
-CC_KINDS = ['PowerTCP']
+#CC_KINDS = ['PowerTCP']
+CC_KINDS = ['DCQCN']
 POLICIES = ['AISIH', 'Normal', 'Normal80', 'Adaptive']
 COLORS = {
     'AISIH': 'r', 
@@ -67,8 +68,13 @@ def precompute_intersections():
                 # 生成文件路径
                 # file_50 = f'data-final/benchmark_diff_workload/exp_benchmark_fct-{work_load}-xpod_Normal50-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
                 # file_80 = f'data-final/benchmark_diff_workload/exp_benchmark_fct-{work_load}-xpod_Normal80-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
-                file_50 = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_Normal80-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
-                file_80 = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_Normal-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+                #file_50 = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_Normal80-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+                #file_80 = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_Normal-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+
+                
+                file_50 = f'data/exp_benchmark_fct-{work_load}-xpod_AISIH-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+                file_80 = f'data/exp_benchmark_fct-{work_load}-xpod_Normal-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+                
                 # 读取文件数据
                 keys50, _ = read_file_keys_and_data(file_50)
                 keys80, _ = read_file_keys_and_data(file_80)
@@ -122,10 +128,10 @@ def process_workload(cc_kind, policy, work_load):
         burst_load = round(0.9 - back_load, 1)
         # 生成文件路径
         if policy == "AISIH":
-            policy_file = f'data-DSH60000/benchmark_search/exp_benchmark_fct-{work_load}-xpod_{policy}-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+            policy_file = f'data/exp_benchmark_fct-{work_load}-xpod_{policy}-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
         else:
-            policy_file = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_{policy}-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
-        base_file = f'data-final/benchmark_search/exp_benchmark_fct-{work_load}-xpod_Normal-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+            policy_file = f'data/exp_benchmark_fct-{work_load}-xpod_{policy}-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
+        base_file = f'data/exp_benchmark_fct-{work_load}-xpod_Normal-DWRR-{cc_kind}-{back_load}back-{burst_load}burst-64KB-8pg/fct.txt'
         
         # 读取数据并计算比率
         print(policy_file)

@@ -173,8 +173,8 @@ def main() -> None:
         for pg in [8]:
             pgmap, quantums = PGMAPS[pg]
             #for mmu in ['DSH', 'Normal', 'DSHnoSH', 'DSHnoIH']:
-            for mmu in ['Normal']:
-            #for mmu in ['Normal','AISIH']:
+            #for mmu in ['Normal']:
+            for mmu in ['Normal','AISIH']:
                 # for mmu in ['DH', 'DH3']:
                 ks : List[Any]
                 # if mmu == 'Normal' or mmu == 'DSH' or mmu == 'DSHnoSH' or mmu == 'DSHnoIH' or mmu == 'Adaptive' or mmu == 'DSHPLUS' or mmu == 'Normal50' or mmu == 'Normal80':

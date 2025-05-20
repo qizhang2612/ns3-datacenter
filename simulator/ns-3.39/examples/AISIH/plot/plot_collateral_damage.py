@@ -2,33 +2,33 @@ import matplotlib.pyplot as plt
 
 # 文件名  
 for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
-    #filename1 = f'data-final/collateral_damage/exp_collateral_damage_AISIH-DWRR-{cc}-24h-8pg/throughput.txt'
+    filename1 = f'data/exp_collateral_damage_AISIH-DWRR-{cc}-24h-8pg/throughput.txt'
     filename2 = f'data/exp_collateral_damage_Normal-DWRR-{cc}-24h-8pg/throughput.txt'
     # filename3 = f'data-DSH60000/collateral_damage/exp_collateral_damage_DSHPLUS-DWRR-{cc}-24h-8pg/throughput.txt'
     
     # 初始化空列表来存储数据  
     x1_values = []
     x2_values = []
-    x3_values = []  # 新增：用于存储 filename3 的 x 数据
+    # x3_values = []  # 新增：用于存储 filename3 的 x 数据
     y1_values = []  
     y2_values = []  
-    y3_values = []  # 新增：用于存储 filename3 的 y 数据
+    # y3_values = []  # 新增：用于存储 filename3 的 y 数据
 
-    # read_line = False
+    read_line = False
     
-    # # 打开文件并读取内容 (filename1)  
-    # with open(filename1, 'r') as file1:  
-    #     for line in file1:  
-    #         if read_line:
-    #             # 移除每行末尾的换行符，并按空格分割字符串  
-    #             values = line.strip().split()
-    #             x1 = float(values[0])  # 第一列作为横坐标
-    #             y1 = float(values[53])
-    #             if x1 >= 2002600000.0:
-    #                 x1 = (x1 - 2002600000.0) / 1000000
-    #                 x1_values.append(x1)  
-    #                 y1_values.append(y1)
-    #         read_line = not read_line
+    # 打开文件并读取内容 (filename1)  
+    with open(filename1, 'r') as file1:  
+        for line in file1:  
+            if read_line:
+                # 移除每行末尾的换行符，并按空格分割字符串  
+                values = line.strip().split()
+                x1 = float(values[0])  # 第一列作为横坐标
+                y1 = float(values[53])
+                if x1 >= 2002600000.0:
+                    x1 = (x1 - 2002600000.0) / 1000000
+                    x1_values.append(x1)  
+                    y1_values.append(y1)
+            read_line = not read_line
 
     read_line = False
 
@@ -66,13 +66,13 @@ for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
     plt.figure(figsize=(10, 8))  # 宽度为10英寸，高度为8英寸  
     
     # 绘制第一条线，使用虚线、红色，并设置线宽和标记  
-    plt.plot(x1_values, y1_values, linestyle='-', color='r', linewidth=3, label='Adaptive')  
+    plt.plot(x1_values, y1_values, linestyle='-', color='r', linewidth=3, label='LSTM-AH')  
     
     # 绘制第二条线，使用实线、蓝色，并设置标记  
-    plt.plot(x2_values, y2_values, linestyle='--', color='g', linewidth=3, label='SIH')  
+    plt.plot(x2_values, y2_values, linestyle='--', color='b', linewidth=3, label='SIH')  
     
     # 新增：绘制第三条线，使用点划线、黑色，并设置标记  
-    plt.plot(x3_values, y3_values, linestyle='-.', color='b', linewidth=3, label='DSH+')  
+    #plt.plot(x3_values, y3_values, linestyle='-.', color='g', linewidth=3, label='DSH+')  
 
     # 设置坐标轴范围（如果需要）  
     plt.xlim(0.0, 1.0)  
@@ -82,7 +82,11 @@ for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
     plt.legend(loc='upper right', prop={'size': 20})  
     
     # 设置图表标题和坐标轴标签，并调整字体大小  
-    plt.title(f'Collateral Damage({cc})', fontsize=22)  
+    if cc == 'None':
+        plt.title(f'Collateral Damage', fontsize=22)  
+    else:
+        plt.title(f'Collateral Damage({cc})', fontsize=22)  
+    #plt.title(f'Collateral Damage({cc})', fontsize=22)  
     plt.xlabel('Time (ms)', fontsize=20)  
     plt.ylabel('Throughput (Gbps)', fontsize=20)  
     
