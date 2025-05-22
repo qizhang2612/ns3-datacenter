@@ -6,29 +6,20 @@ from collections import defaultdict
 WORK_LOADS = ['search']
 BACK_LOADS = [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 #CC_KINDS = ['PowerTCP', 'DCQCN', 'HPCC', 'None']
-#CC_KINDS = ['PowerTCP']
-CC_KINDS = ['DCQCN']
-POLICIES = ['AISIH', 'Normal', 'Normal80', 'Adaptive']
+CC_KINDS = ['PowerTCP']
+#CC_KINDS = ['DCQCN']
+POLICIES = ['AISIH', 'Normal']
 COLORS = {
     'AISIH': 'r', 
-    'Normal': 'g',  # SIH
-    'Normal50': 'b', 
-    'Normal80': 'm', 
-    'Adaptive': 'c'
+    'Normal': 'b'  # SIH
 }
 MARKERS = {
     'AISIH': 'o', 
-    'Normal': 'x',  # SIH
-    'Normal50': 's', 
-    'Normal80': '^', 
-    'Adaptive': '*'
+    'Normal': 'x'  # SIH
 }
 LINE_STYLES = {
     'AISIH': '-', 
-    'Normal': '--',  # SIH
-    'Normal50': '-.', 
-    'Normal80': ':', 
-    'Adaptive': '-'
+    'Normal': '--' # SIH
 }
 
 # 缓存文件数据和键的交集
@@ -60,7 +51,7 @@ def read_file_keys_and_data(filepath):
     return file_cache[filepath]
 
 def precompute_intersections():
-    """预先计算所有Normal50和Normal80文件的键交集"""
+    """预先计算所有Normal和其他文件的键交集"""
     for work_load in WORK_LOADS:
         for cc_kind in CC_KINDS:
             for back_load in BACK_LOADS:
@@ -184,7 +175,13 @@ def prepare_plot_data(cc_kind, traffic_kind, work_load):
     
     for policy in POLICIES:
         ratios = data[policy][traffic_kind]
-        label = 'SIH' if policy == 'Normal' else policy
+        #label = 'SIH' if policy == 'Normal' else policy
+        if policy == 'Normal' :
+            label = 'SIH' 
+        elif policy == 'AISIH' :
+            label = 'LSTM-AH'
+        else:
+            label = policy
         plot_data.append((
             x_values,
             ratios,
@@ -214,6 +211,9 @@ def plot_figure(cc_kind, traffic_kind, work_load, plot_data):
     plt.xlabel('Fan-in Load', fontsize=12)
     plt.ylabel('Normalized FCT', fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.7)
+
+    plt.ylim(0.6, 1.1)
+
     plt.tight_layout()
     plt.savefig(f'image/benchmark_fct_{work_load}_{traffic_kind}_{cc_kind}.png', dpi=300)
     plt.close()

@@ -109,6 +109,7 @@ SwitchMmu::SwitchMmu(void) {
 			lastHeadroom[port][q]=0;
 			firstHeadroom = 0;
 			lastUpdateTime[port][q] = 0;
+			nowHeadroom[port][q] = false;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -409,6 +410,9 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 					if(headroomRate < 0){
 						headroomRate = 0;
 					}
+					if(headroomRate > 0){
+						nowHeadroom[port][qIndex] = true;
+					}
 					if(headroomRate >= 1){
 						headroomRate = 1;
 					}
@@ -454,6 +458,16 @@ void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
 }
 
+int SwitchMmu::GetRunQueueNum(uint32_t port){
+	int result = 0;
+	for (uint32_t q = 1; q < qCnt; q++) {
+		if(nowHeadroom[port][q]){
+			++result;
+		}
+	}
+	return result;
+}
+
 //获取余量headroom
 double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 	// 动态构建CSV文件路径
@@ -489,8 +503,15 @@ double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
                 try {
 					double headroomRate = std::stod(tokens[0]); 
 					std::cout<<"gHeadroom:"<<headroomRate<<std::endl;
-					if(headroomRate < 0 || headroomRate >= 0.12){
-						return 0.12;
+					if(headroomRate < 0){
+						return 0.0;
+					}
+					if(headroomRate >= 0.12){
+						int nums = GetRunQueueNum(port); 
+						if(nums == 0){
+							return 0.0;
+						}
+						return 1/nums;
 					}
                     return headroomRate;  // 唯一有效字段
                 } catch (const std::exception& e) {

@@ -51,7 +51,8 @@ def exp_pfc_avoidance(  # pylint: disable=W0102
         SL_Gbps=100,
         LH_Gbps=100,
         delay='2000ns',
-        buffer_size=3,
+        #buffer_size=3,
+        buffer_size=16,
         port_hdrm_k=4.0,
         mx_pg=7,
         mmu_kind="Normal",
@@ -166,13 +167,9 @@ def main() -> None:
         burst_perc = burst / 10
         for pg in [8]:
             pgmap, quantums = PGMAPS[pg]
-            #for mmu in ['DSH', 'Normal']:
-            # for mmu in ['DSH','DSHPLUS']:
-            #for mmu in ['Normal','AISIH']:
-            for mmu in ['Normal']:
-                # for mmu in ['DH', 'DH3']:
+            for mmu in ['Normal','AISIH']:
+            #for mmu in ['Normal']:
                 ks : List[Any]
-                # if mmu == 'Normal' or mmu == 'DSH' or mmu == 'QASH' or mmu == 'DSHPLUS':
                 if mmu == 'Normal' or mmu == 'AISIH':
                     ks = [pg+1]
                 else:

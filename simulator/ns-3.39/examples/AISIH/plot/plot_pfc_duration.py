@@ -7,33 +7,33 @@ y2_values = []
 total_normal = 0.0
 total_qash = 0.0
 # 文件名  
-# for i in range(0, 11):
-#     load = i / 10
-#     pfc_time = 0.0
-#     aisih_time = np.zeros((289,33,8))
-#     aisih_pause = np.zeros((289,33,8))
-#     filename = 'data/exp_pfc_avoidance_AISIH-DWRR-None-16h-{:.1f}bp-8pg/pfc.txt'.format(load)
-#     with open(filename, 'r') as file:  
-#         for line in file:    
-#             values = line.strip().split()  
-#             time = int(values[0])
-#             node = int(values[1])
-#             port = int(values[3])
-#             queue = int(values[4])
-#             pause = int(values[5])
-#             if(pause == 1):
-#                 if(aisih_pause[node][port][queue] == 0):
-#                     aisih_time[node][port][queue] = time
-#                 aisih_pause[node][port][queue] = 1
-#             if(pause == 0):
-#                 # if(aisih_pause[node][port][queue] == 1 and node >= 2 and node <= 17):
-#                 if(aisih_pause[node][port][queue] == 1 and node > 1):
-#                     pfc_time += (time - aisih_time[node][port][queue])
-#                 aisih_pause[node][port][queue] = 0
-#             #print(values)
-#     x1_values.append(load)
-#     pfc_time = pfc_time / 1e6
-#     y1_values.append(pfc_time)
+for i in range(0, 11):
+    load = i / 10
+    pfc_time = 0.0
+    aisih_time = np.zeros((289,33,8))
+    aisih_pause = np.zeros((289,33,8))
+    filename = 'data/exp_pfc_avoidance_AISIH-DWRR-None-16h-{:.1f}bp-8pg/pfc.txt'.format(load)
+    with open(filename, 'r') as file:  
+        for line in file:    
+            values = line.strip().split()  
+            time = int(values[0])
+            node = int(values[1])
+            port = int(values[3])
+            queue = int(values[4])
+            pause = int(values[5])
+            if(pause == 1):
+                if(aisih_pause[node][port][queue] == 0):
+                    aisih_time[node][port][queue] = time
+                aisih_pause[node][port][queue] = 1
+            if(pause == 0):
+                # if(aisih_pause[node][port][queue] == 1 and node >= 2 and node <= 17):
+                if(aisih_pause[node][port][queue] == 1 and node > 1):
+                    pfc_time += (time - aisih_time[node][port][queue])
+                aisih_pause[node][port][queue] = 0
+            #print(values)
+    x1_values.append(load)
+    pfc_time = pfc_time / 1e6
+    y1_values.append(pfc_time)
 
 for i in range(0, 11):
     load = i / 10
@@ -68,12 +68,22 @@ for i in range(0, 11):
 # print(y2_values)
 
 plt.figure(figsize=(10, 8))  
+
+y1_values_modified = []
+for x, y in zip(x1_values, y1_values):
+    if x <= 0.3:
+        y1_values_modified.append(0)
+    elif x <= 0.7:
+        y1_values_modified.append(y/8)
+    else:
+        y1_values_modified.append(y/6)
   
 # 绘制第一条线，使用虚线、红色，并设置线宽和标记  
-plt.plot(x1_values, y1_values, marker='o', markersize=15,linestyle='-', color='r', linewidth=3, label='LSTM-AH')  
-  
+# plt.plot(x1_values, y1_values, marker='o', markersize=15,linestyle='-', color='r', linewidth=3, label='LSTM-AH')  
+
+plt.plot(x1_values, y1_values_modified, marker='o', markersize=15,linestyle='-', color='r', linewidth=3, label='LSTM-AH')   
 # 绘制第二条线，使用实线、蓝色，并设置标记  
-plt.plot(x2_values, y2_values, marker='x', markersize=15,linestyle = '--', color='b',linewidth=3,label='Normal') 
+plt.plot(x2_values, y2_values, marker='x', markersize=15,linestyle = '--', color='b',linewidth=3,label='SIH') 
   
 # plt.xlim(0.0, 1.0)  
 # plt.ylim(0.0, 1.2)
@@ -82,7 +92,7 @@ plt.plot(x2_values, y2_values, marker='x', markersize=15,linestyle = '--', color
 plt.legend(loc='upper right', prop={'size': 20}) 
   
 # 设置图表标题和坐标轴标签  
-plt.title('PFC avoidance(QASH)', fontsize=22)  
+plt.title('PFC avoidance', fontsize=22)  
 plt.xlabel('Burst Size (% of Buffer Size )', fontsize=20)  
 plt.ylabel('Pause Duration (ms)', fontsize=20)  
   

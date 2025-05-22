@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
     filename1 = f'data/exp_collateral_damage_AISIH-DWRR-{cc}-24h-8pg/throughput.txt'
     filename2 = f'data/exp_collateral_damage_Normal-DWRR-{cc}-24h-8pg/throughput.txt'
-    # filename3 = f'data-DSH60000/collateral_damage/exp_collateral_damage_DSHPLUS-DWRR-{cc}-24h-8pg/throughput.txt'
     
     # 初始化空列表来存储数据  
     x1_values = []
@@ -46,22 +45,6 @@ for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
                     y2_values.append(y2)
             read_line = not read_line
 
-    # read_line = False
-
-    # # 新增：打开文件并读取内容 (filename3)  
-    # with open(filename3, 'r') as file3:  
-    #     for line in file3:  
-    #         if read_line:
-    #             # 移除每行末尾的换行符，并按空格分割字符串  
-    #             values = line.strip().split()  
-    #             x3 = float(values[0])  # 第一列作为横坐标  
-    #             y3 = float(values[53])   
-    #             if x3 >= 2002600000.0:
-    #                 x3 = (x3 - 2002600000.0) / 1000000
-    #                 x3_values.append(x3)  
-    #                 y3_values.append(y3)
-    #         read_line = not read_line
-
     # 创建一个新的图形窗口，并设置其大小  
     plt.figure(figsize=(10, 8))  # 宽度为10英寸，高度为8英寸  
     
@@ -71,9 +54,6 @@ for cc in ['None', 'DCQCN', 'PowerTCP', 'HPCC']:
     # 绘制第二条线，使用实线、蓝色，并设置标记  
     plt.plot(x2_values, y2_values, linestyle='--', color='b', linewidth=3, label='SIH')  
     
-    # 新增：绘制第三条线，使用点划线、黑色，并设置标记  
-    #plt.plot(x3_values, y3_values, linestyle='-.', color='g', linewidth=3, label='DSH+')  
-
     # 设置坐标轴范围（如果需要）  
     plt.xlim(0.0, 1.0)  
     plt.ylim(0, 100)  # 增加10%的裕量  

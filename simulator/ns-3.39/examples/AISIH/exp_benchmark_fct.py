@@ -221,15 +221,12 @@ def main() -> None:
     for load10 in range(1, 9):
         load = load10 / 10
         #for cc in ['DCQCN', 'HPCC', 'PowerTCP', 'None']:
-        for cc in ['DCQCN']:
+        #for cc in ['DCQCN']:
+        for cc in ['PowerTCP']:
             for pg in [8]:
                 pgmap, quantums = PGMAPS[pg]
-                #for mmu in ['Normal', 'DSH']:
-                #for mmu in ['Normal', 'DSH', 'DSHnoSH', 'DSHnoIH']:
-                for mmu in ['Normal', 'AISIH']:
-                #for mmu in ['Normal']:
-                #for mmu in ['Normal', 'DSHPLUS']:
-                    # for mmu in ['DH', 'DH3']:
+                #for mmu in ['Normal', 'AISIH']:
+                for mmu in ['Normal']:
                     ks : List[Any]
                     # if mmu == 'Normal' or mmu == 'DSH' or mmu == 'DSHnoSH' or mmu == 'DSHnoIH' or mmu == 'Adaptive' or mmu == 'DSHPLUS' or mmu == 'Normal50' or mmu == 'Normal80':
                     if mmu == 'Normal' or mmu == 'AISIH':

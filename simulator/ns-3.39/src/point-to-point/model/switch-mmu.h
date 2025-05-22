@@ -28,6 +28,7 @@ public:
 	std::ofstream csvFile;
     bool headerWritten = false;
 	uint64_t firstHeadroom;
+	int GetRunQueueNum(uint32_t port);
 	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,uint64_t time);
 	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
 	void ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index);
@@ -144,6 +145,7 @@ public:
 	uint64_t pauseTime[pCnt][qCnt];
 	uint64_t pauseStartTime[pCnt][qCnt];
 	uint64_t aiHeadroom[pCnt][qCnt];
+	bool nowHeadroom[pCnt][qCnt];
 	uint64_t index[pCnt][qCnt];
 	uint64_t lastHeadroom[pCnt][qCnt];
 	

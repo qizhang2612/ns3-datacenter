@@ -50,7 +50,6 @@ def exp_pfc_avoidance(  # pylint: disable=W0102
         buffer_size=16,
         port_hdrm_k=4.0,
         mx_pg=7,
-        # mmu_kind="DSH",
         mmu_kind="NORMAL",
         start_time=2000000,
 
@@ -172,13 +171,9 @@ def main() -> None:
     for CC in ['None', 'HPCC', 'PowerTCP', 'DCQCN']:
         for pg in [8]:
             pgmap, quantums = PGMAPS[pg]
-            #for mmu in ['DSH', 'Normal', 'DSHnoSH', 'DSHnoIH']:
             #for mmu in ['Normal']:
             for mmu in ['Normal','AISIH']:
-                # for mmu in ['DH', 'DH3']:
                 ks : List[Any]
-                # if mmu == 'Normal' or mmu == 'DSH' or mmu == 'DSHnoSH' or mmu == 'DSHnoIH' or mmu == 'Adaptive' or mmu == 'DSHPLUS' or mmu == 'Normal50' or mmu == 'Normal80':
-                if mmu == 'Normal' or mmu == 'AISIH':
                     ks = [pg+1]
                 else:
                     ks = [pg+1]
