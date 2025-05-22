@@ -275,12 +275,6 @@ def pfc_deadlock(test_name: str):
     mmu = 'Normal'
     if test_name.find('AISIH') != -1:
         mmu = 'AISIH'
-    # elif test_name.find('DSH') != -1:
-    #     mmu = 'DSH'
-    # elif test_name.find('Adaptive') != -1:
-    #     mmu = 'Adaptive'
-    # elif test_name.find('QASH') != -1:
-    #     mmu = 'QASH'
     
     cc = 'None'
     if test_name.find('HPCC') != -1:

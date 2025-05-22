@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
 	//uint32_t algorithm = 3;
 	//uint32_t windowCheck = 1;
 	uint32_t mmuKind = 1;
-	std::string confFile = "/home/qzhang/ns3-datacenter/simulator/ns-3.39/examples/AISIH/data/exp_collateral_damage_DSH-DWRR-HPCC-25h-8pg/config.txt";
+	std::string confFile = "/home/qzhang/ns3-datacenter/simulator/ns-3.39/examples/AISIH/data/exp_collateral_damage_AISIH-DWRR-HPCC-25h-8pg/config.txt";
 	CommandLine cmd;
 	cmd.AddValue("conf", "config file path", confFile);
 	cmd.AddValue("mmuKind", "windowCheck", mmuKind);
