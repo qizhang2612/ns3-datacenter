@@ -174,6 +174,7 @@ def main() -> None:
             #for mmu in ['Normal']:
             for mmu in ['Normal','AISIH']:
                 ks : List[Any]
+                if mmu == 'Normal' or mmu == "AISIH" :
                     ks = [pg+1]
                 else:
                     ks = [pg+1]

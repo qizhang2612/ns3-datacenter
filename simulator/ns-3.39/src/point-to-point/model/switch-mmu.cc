@@ -413,9 +413,9 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 					if(headroomRate > 0){
 						nowHeadroom[port][qIndex] = true;
 					}
-					if(headroomRate >= 1){
-						headroomRate = 1;
-					}
+					// if(headroomRate >= 1){
+					// 	headroomRate = 1;
+					// }
                     std::cout<<"headroomRate:"<<headroomRate<<std::endl;
 					//uint64_t headroom = headroomRate * firstHeadroom;
 
@@ -426,7 +426,17 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 
                     //aiHeadroom[port][qIndex] = headroom + GetGHeadroom(port,qIndex,index);
                     
-					aiHeadroom[port][qIndex] = (headroomRate + GetGHeadroom(port,qIndex,index)) * firstHeadroom;
+					int nums = GetRunQueueNum(port); 
+					double lastRate = 0.0;
+					double aiRate = headroomRate + GetGHeadroom(port,qIndex,index);
+					if(nums == 0){
+						lastRate = aiRate;
+					}else if(aiRate > 1 / nums){
+						lastRate = 1 / nums;
+					}else{
+						lastRate = aiRate;
+					}
+					aiHeadroom[port][qIndex] = lastRate * firstHeadroom;
 
 					if (xoffTotalUsed > 0) {
                         aiHeadroom[port][qIndex] = aiHeadroom[port][qIndex] > xoff[port][qIndex] ? aiHeadroom[port][qIndex] : xoff[port][qIndex];
