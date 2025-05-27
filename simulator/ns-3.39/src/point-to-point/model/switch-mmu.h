@@ -22,6 +22,7 @@ public:
 	double GetGHeadroom(uint32_t port, uint32_t qIndex,int index);
 	uint64_t GetAIHeadroom();
 	void UpdateHeadroom(uint32_t port, uint32_t qIndex);
+	void writeData(uint32_t port, uint32_t qIndex);
 	int64_t GetNowTime(); //ms
 	uint64_t GetNowTimeWs(); //微秒
 	//uint64_t qLength[pCnt][qCnt];
@@ -148,6 +149,8 @@ public:
 	bool nowHeadroom[pCnt][qCnt];
 	uint64_t index[pCnt][qCnt];
 	uint64_t lastHeadroom[pCnt][qCnt];
+	uint64_t queueLength[pCnt][qCnt];
+	double queueRate[pCnt][qCnt];
 	
 	
 

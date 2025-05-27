@@ -110,6 +110,8 @@ SwitchMmu::SwitchMmu(void) {
 			firstHeadroom = 0;
 			lastUpdateTime[port][q] = 0;
 			nowHeadroom[port][q] = false;
+			queueLength[port][q] = 0;
+			queueRate[port][q] = 0.0;
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -349,8 +351,8 @@ uint64_t SwitchMmu::GetIngressReservedUsed(uint32_t port, uint32_t qIndex) {
 uint64_t SwitchMmu::GetIngressSharedUsed() {
 	return (totalUsed - xoffTotalUsed - totalIngressReservedUsed);
 }
-uint64_t SwitchMmu::RecordPortThroughput(uint32_t port)
-{
+
+uint64_t SwitchMmu::RecordPortThroughput(uint32_t port){
 	uint64_t result = egress_th_bytes[port];
   	egress_th_bytes[port] = 0;
   	return result;
@@ -460,8 +462,20 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
     }
 }
 
+void SwitchMmu::writeData(uint32_t port, uint32_t qIndex){
+	bool pfcStopStatus;
+	if(xoffUsed[port][qIndex] >  0){
+		pfcStopStatus = true;
+	}else{
+		pfcStopStatus = false;
+	}
+	uint64_t time = GetNowTimeWs();
+	std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<queueLength[port][qIndex]<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<" queueRate:"<<queueRate[port][qIndex]<<std::endl;
+}
+
 //更新对应的净空缓存
 void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
+	//writeData(port,qIndex);
 	ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
 	index[port][qIndex]++;
 	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
@@ -630,6 +644,7 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 			WriteQueueLengthAndTimeEveryCycle(port, qIndex, ingress_bytes[port][qIndex], GetNowTimeWs());
 			pqTime[port][qIndex] = pqNowTime;
 			std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" ingress_bytes:"<<ingress_bytes[port][qIndex]<<" pqTime:"<<pqTime[port][qIndex]<<std::endl;
+			//queueLength[port][qIndex] = ingress_bytes[port][qIndex];
 		}
 		UpdataPauseTime(port, qIndex);
 		if (GetUseAI()){
@@ -645,6 +660,11 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 				}
 				if (lastUpdateTime[port][qIndex] != 0 && pqNowTime - lastUpdateTime[port][qIndex] >= 10){
 					std::cout<<"-----------UpdateHeadroom-----------"<<std::endl;
+					if(queueLength[port][qIndex] == 0){
+						queueLength[port][qIndex] = ingress_bytes[port][qIndex];
+					}else{
+						queueRate[port][qIndex] = (ingress_bytes[port][qIndex] - queueLength[port][qIndex]) / 10 *1000*1000/1024;
+					}
 					UpdateHeadroom(port, qIndex);
 					lastUpdateTime[port][qIndex] = pqNowTime;
 				}
