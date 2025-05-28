@@ -499,7 +499,7 @@ int SwitchMmu::GetRunQueueNum(uint32_t port){
 	return result;
 }
 
-//获取余量headroom
+//获取余量headroom,同时包含预测保障逻辑
 double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 	// 动态构建CSV文件路径
     std::string filePath = GetGrsvFilePath(port,qIndex);
