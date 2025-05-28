@@ -473,11 +473,18 @@ void SwitchMmu::writeData(uint32_t port, uint32_t qIndex){
 	std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<queueLength[port][qIndex]<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<" queueRate:"<<queueRate[port][qIndex]<<std::endl;
 }
 
-//更新对应的净空缓存
-void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
-	//writeData(port,qIndex);
+void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
+	writeData(port,qIndex);
 	ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
 	index[port][qIndex]++;
+}
+
+//更新对应的净空缓存
+void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
+	GetLSTMHeadroom(port,qIndex);
+	//writeData(port,qIndex);
+	// ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
+	// index[port][qIndex]++;
 	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
 }

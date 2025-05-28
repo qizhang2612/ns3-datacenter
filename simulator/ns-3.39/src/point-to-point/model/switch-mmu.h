@@ -21,6 +21,7 @@ public:
 	//zqadd
 	double GetGHeadroom(uint32_t port, uint32_t qIndex,int index);
 	uint64_t GetAIHeadroom();
+	void GetLSTMHeadroom(uint32_t port, uint32_t qIndex);
 	void UpdateHeadroom(uint32_t port, uint32_t qIndex);
 	void writeData(uint32_t port, uint32_t qIndex);
 	int64_t GetNowTime(); //ms
