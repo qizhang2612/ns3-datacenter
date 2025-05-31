@@ -7,6 +7,12 @@
 #include "switch-mmu.h"
 #include "pint.h"
 
+/*Buffer Management Algorithms*/
+# define DT 0
+# define EDT 1
+# define TDT 2
+# define AASDT 3
+
 namespace ns3 {
 
 class Packet;

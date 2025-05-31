@@ -30,6 +30,9 @@
 #include "ns3/custom-header.h"
 /* Modification */
 
+//zq add switch
+#include "ns3/switch.h"
+
 namespace ns3
 {
 
@@ -224,6 +227,11 @@ class Node : public Object
   
   // vamsi
   void SetNodeType(uint32_t type){m_node_type=type;}
+
+  //zqadd
+    Ptr<Switch> m_switch;
+    // void SetNodeType(uint32_t type);
+    // uint32_t GetNodeType();
   /* Modification */
 
   protected:

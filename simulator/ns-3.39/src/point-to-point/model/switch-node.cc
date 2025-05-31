@@ -59,6 +59,11 @@ TypeId SwitchNode::GetTypeId (void)
 SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
 	m_ecmpSeed = m_id;
 	m_node_type = 1;
+	m_switch = CreateObject<Switch>();
+	m_switch->SetStrategy(DT);
+	//m_switch->SetStrategy(EDT);
+	//m_switch->SetStrategy(TDT);
+	//m_switch->SetStrategy(AASDT);
 	switch (m_mmu_kind)
     {
     case Normal:
