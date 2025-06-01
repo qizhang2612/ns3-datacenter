@@ -639,6 +639,18 @@ void SwitchMmu::UpdataPauseTime(uint32_t port, uint32_t qIndex){
 	}
 }
 
+void SwitchMmu::SetThreshold(uint64_t threshold){
+	m_threshold = threshold;
+}
+
+void SwitchMmu::SetRemaining(uint64_t remaining){
+	m_remaining = remaining;
+}
+
+uint64_t SwitchMmu::GetRemaining(){
+	return m_remaining;
+}
+
 
 // DT's threshold = Alpha x remaining.
 // A sky high threshold for a queue can be emulated by setting the corresponding alpha to a large value. eg., UINT32_MAX
@@ -693,7 +705,9 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 			std::cout << "ingressPool: " << ingressPool << " totalIngressReserved: " << totalIngressReserved << std::endl;
 			if (ingressSharedPool > ingressPoolSharedUsed) {
 				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
+				SetRemaining(remaining);
 				//std::cout << "remaining: " << remaining << " ingressSharedPool: " << ingressSharedPool << " ingressPoolSharedUsed:" << ingressPoolSharedUsed << " alpha: "<< alphaIngress[port][qIndex] << std::endl;
+				//return std::min(uint64_t(m_threshold), UINT64_MAX - 1024 * 1024);
 				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
 			}
 			else {

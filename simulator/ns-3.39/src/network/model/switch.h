@@ -58,6 +58,7 @@ namespace ns3 {
             //get function
             int GetNodeType();
             int GetThreshold();
+            uint64_t ReThreshold(uint64_t remaining);
             int GetPacketDropNum();
             int GetStrategy();
             int GetSharedBufferSize();
@@ -75,6 +76,7 @@ namespace ns3 {
             //set function
             void SetNodeType(int type);
             void SetdtAlphaExp(int alphaExp);
+            int GetdtAlphaExp();
             void SetdtInitialAlphaExp(int alphaExp);
             void SetStrategy(int strategy);
             void SetPort(uint32_t port);
@@ -98,6 +100,7 @@ namespace ns3 {
             void AddUsed(int size);
             void DeleteUsed(int size);
             void Calculate();
+            void Cal(uint64_t remaining);
             void StatusJudgment();
             void TimeoutJudgment();
             void AASDTReset();

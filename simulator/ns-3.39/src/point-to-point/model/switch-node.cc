@@ -59,11 +59,18 @@ TypeId SwitchNode::GetTypeId (void)
 SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
 	m_ecmpSeed = m_id;
 	m_node_type = 1;
+	//zqadd
 	m_switch = CreateObject<Switch>();
-	m_switch->SetStrategy(DT);
-	//m_switch->SetStrategy(EDT);
-	//m_switch->SetStrategy(TDT);
-	//m_switch->SetStrategy(AASDT);
+	// m_switch->SetStrategy(DT);
+	// //m_switch->SetStrategy(EDT);
+	// //m_switch->SetStrategy(TDT);
+	// //m_switch->SetStrategy(AASDT);
+	// m_switch->SetdtInitialAlphaExp(-4);
+	int strategy = DT;
+	int PORTNUM = 32;
+	int ALPHA = -4;
+	int BUFFERSIZE = 2649088;
+	initSwitch(strategy,PORTNUM,ALPHA,BUFFERSIZE);
 	switch (m_mmu_kind)
     {
     case Normal:
@@ -86,6 +93,55 @@ SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
 		m_lastPktSize[i] = m_lastPktTs[i] = 0;
 	for (uint32_t i = 0; i < pCnt; i++)
 		m_u[i] = 0;
+}
+
+void SwitchNode::initSwitch(int strategy,int PORTNUM,int ALPHA,int BUFFERSIZE){
+	Ptr<UintegerValue> m_PortNumPtr = Create<UintegerValue>(PORTNUM);;
+  	Ptr<UintegerValue> m_usedBufferPtr = Create<UintegerValue>(0);
+  	Ptr<UintegerValue> m_stateChangePtr = Create<UintegerValue>(1);
+
+	m_switch->SetStrategy(strategy);
+	m_switch->SetdtAlphaExp(ALPHA);
+	m_switch->SetdtInitialAlphaExp(ALPHA);
+    m_switch->SetSharedBufferSize(BUFFERSIZE);
+    m_switch->SetUsedBufferPtr(m_usedBufferPtr);
+    m_switch->SetPortNumPtr(m_PortNumPtr);
+    m_switch->SetStateChangePtr(m_stateChangePtr);
+
+  	if(strategy == DT){
+    	std::cout<<"--------- this is DT strategy ---------"<<std::endl;
+  	}else if(strategy == EDT){
+    	std::cout<<"--------- this is EDT strategy ---------"<<std::endl;
+    	//init ptr
+    	Ptr<UintegerValue> m_EDTCPortNumPtr = Create<UintegerValue>(PORTNUM);
+    	Ptr<UintegerValue> m_EDTNCPortNumPtr = Create<UintegerValue>(0);
+    	//init switch
+      	m_switch->SetEDTPortNumPtr(m_EDTCPortNumPtr,m_EDTNCPortNumPtr);
+  	}else if(strategy == TDT){
+    	std::cout<<"--------- this is TDT strategy ---------"<<std::endl;
+    	//init ptr
+    	Ptr<UintegerValue> m_TDTNPortNumPtr = Create<UintegerValue>(PORTNUM);
+    	Ptr<UintegerValue> m_TDTAPortNumPtr = Create<UintegerValue>(0);
+    	Ptr<UintegerValue> m_TDTEPortNumPtr = Create<UintegerValue>(0);
+    	//init switch
+      	m_switch->SetTDTPortNumPtr(m_TDTNPortNumPtr,m_TDTAPortNumPtr,m_TDTEPortNumPtr);
+  	}else if(strategy == AASDT){
+    	std::cout<<"--------- this is AASDT strategy ---------"<<std::endl;
+    	//init ptr
+    	Ptr<UintegerValue> m_AASDTNPortNumPtr = Create<UintegerValue>(PORTNUM);
+    	Ptr<UintegerValue> m_AASDTIPortNumPtr = Create<UintegerValue>(0);
+    	Ptr<UintegerValue> m_AASDTCPortNumPtr = Create<UintegerValue>(0);
+    	Ptr<UintegerValue> m_AASDTCIPortNumPtr = Create<UintegerValue>(0);
+    	Ptr<UintegerValue> m_AASDTCCPortNumPtr = Create<UintegerValue>(0);
+    	Ptr<UintegerValue> m_AASDTITimePtr = Create<UintegerValue>(0);
+    	Ptr<UintegerValue> m_AASDTCTimePtr = Create<UintegerValue>(0);
+    	//init switch
+      	m_switch->SetAASDTPortNumPtr(m_AASDTNPortNumPtr,m_AASDTIPortNumPtr,m_AASDTCPortNumPtr,m_AASDTCIPortNumPtr,m_AASDTCCPortNumPtr);
+      	m_switch->SetAASDTICNumPtr(m_AASDTITimePtr,m_AASDTCTimePtr);
+    	//Simulator::Schedule(Seconds(1), &(sw->m_switch->AASDTReset));
+  	}else{
+    	std::cout<<"--------- strategy error ---------"<<std::endl;
+  	}
 }
 
 int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch) {
@@ -178,6 +234,18 @@ void SwitchNode::SendToDev(Ptr<Packet>p, CustomHeader &ch) {
 		if (qIndex != 0) { //not highest priority
 			// IMPORTANT: MyPriorityTag should only be attached by lossy traffic. This tag indicates the qIndex but also indicates that it is "lossy". Never attach MyPriorityTag on lossless traffic.
 			if (m_mmu->CheckIngressAdmission(inDev, qIndex, p->GetSize(), found,unsched) && m_mmu->CheckEgressAdmission(idx, qIndex, p->GetSize(), found,unsched)) {			// Admission control
+				//zqadd
+				m_switch->AddUsed(p->GetSize());
+            	m_switch->AddPacketEnqueueNum();
+            	m_switch->AddEnQueueLength(p->GetSize());
+				//m_switch->ReThreshold(m_mmu->GetRemaining());
+				//m_mmu->SetThreshold(m_switch->ReThreshold(m_mmu->GetRemaining()));
+				// int ALPHA = m_switch->GetdtAlphaExp();
+				// m_mmu->SetAlphaIngress(std::pow(2.0, ALPHA));
+            	//m_switch->SetQueueLength(DynamicCast<QbbNetDevice>(m_devices[idx])->totalBytesRcvd);
+            	//m_switch->SetQueuePacketNum(m_queue->GetNPackets());
+				//zq
+				
 				m_mmu->UpdateIngressAdmission(inDev, qIndex, p->GetSize(), found, unsched);
 				m_mmu->UpdateEgressAdmission(idx, qIndex, p->GetSize(), found);
 			} else {
@@ -260,6 +328,11 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 	if (qIndex != 0) {
 		uint32_t inDev = t.GetPortId();
 		m_mmu->RemoveFromIngressAdmission(inDev, qIndex, p->GetSize(), found);
+		//zqadd
+		m_switch->DeleteUsed(p->GetSize());
+		m_switch->AddPacketDequeueNum();
+    	m_switch->AddDeQueueLength(p->GetSize());
+		//zq
 		m_mmu->RemoveFromEgressAdmission(ifIndex, qIndex, p->GetSize(), found);
 		m_bytes[inDev][ifIndex][qIndex] -= p->GetSize();
 		m_mmu->egress_th_bytes[ifIndex] += p->GetSize ();

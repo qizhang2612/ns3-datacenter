@@ -75,6 +75,20 @@ int Switch::GetThreshold(){
     return int64_t(m_threshold);
 }
 
+
+uint64_t Switch::ReThreshold(uint64_t remaining){
+    StatusJudgment();
+    /* if(m_stateChangePtr->Get() > 0){
+        m_isDropPacket = false;
+    } */
+    Cal(remaining);
+    //std::cout<<m_threshold<<std::endl;
+    if(m_threshold > m_sharedBufferSize){
+        return m_sharedBufferSize;
+    }
+    return uint64_t(m_threshold);
+}
+
 int Switch::GetPacketDropNum(){
     return m_packetDropNum;
 }
@@ -129,6 +143,150 @@ int Switch::GetAASDTCTime(){
 
 int64_t Switch::GetNowTime(){
     return Simulator::Now().GetMilliSeconds();
+}
+
+void Switch::Cal(uint64_t remaining){
+    uint64_t availBuffer = remaining;
+    if(m_strategy == DT){
+        m_threshold = (m_dtAlphaExp >= 0) ? (availBuffer << m_dtAlphaExp) : (availBuffer >> (-m_dtAlphaExp));
+    }else if(m_strategy == EDT){
+        int n = m_EDTNCPortNumPtr->Get();
+        if(m_EDTstate == CONTROL){
+            m_threshold = (m_dtAlphaExp >= 0) ? (availBuffer << m_dtAlphaExp) : (availBuffer >> (-m_dtAlphaExp));
+        }else{
+            if(m_stateChangePtr->Get() > 0){
+                //std::cout<<"zqzqzqzqzqzq"<<std::endl;
+                //std::cout<<n<<std::endl;
+                m_threshold = m_sharedBufferSize / n;
+                m_stateChangePtr->Set(0);
+            }
+        }
+    }else if(m_strategy == TDT){
+        int n = m_PortNumPtr->Get();
+        int n_a = m_TDTAPortNumPtr->Get();
+        if(m_TDTstate == ABSORPTION){
+            if(m_stateChangePtr->Get() > 0){
+                m_threshold = m_sharedBufferSize / n_a;
+                m_stateChangePtr->Set(0);
+            }
+        }else if(m_TDTstate == EVACUATION){
+            if(m_stateChangePtr->Get() > 0){
+                m_threshold = m_sharedBufferSize / n;
+                m_stateChangePtr->Set(0);
+            }
+        }else{
+            m_threshold = (m_dtAlphaExp >= 0) ? (availBuffer << m_dtAlphaExp) : (availBuffer >> (-m_dtAlphaExp));
+        }
+    }else if(m_strategy == AASDT){
+        int n = m_PortNumPtr->Get();
+        int n_n = m_AASDTNPortNumPtr->Get();
+        int n_i = m_AASDTIPortNumPtr->Get();
+        int n_c = m_AASDTCPortNumPtr->Get();
+        int n_ci = m_AASDTCIPortNumPtr->Get();
+        int n_cc = m_AASDTCCPortNumPtr->Get();
+        if(n == 1){
+            if(m_AASDTstate == AASDTNORMAL){
+                //std::cout<<"-------this is AASDTNORMAL state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha);
+                    m_stateChangePtr->Set(0);
+                }
+            }else if(m_AASDTstate == INCAST){
+                //std::cout<<"11111111111111111111"<<std::endl;
+                //std::cout<<"-------this is INCAST state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha + 1);
+                    m_stateChangePtr->Set(0);
+                }
+                if(m_isDropPacket){
+                    //std::cout<<"-------Drop Packet unlimited-------"<<std::endl;
+                    SetdtAlphaExp(m_dtInitialAlpha + 1 + n);
+                    m_isDropPacket = false;
+                }
+            }else if(m_AASDTstate == CONGESTION){
+                //std::cout<<"-------this is CONGESTION state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha + 1);
+                    m_stateChangePtr->Set(0);
+                }
+            }
+        }else if(n_n == n){//all normal
+            //std::cout<<"-------this is AASDTNORMAL state-------"<<std::endl;
+            if(m_stateChangePtr->Get() > 0){
+                SetdtAlphaExp(m_dtInitialAlpha);
+                m_stateChangePtr->Set(0);
+            }
+        }else if(n_n + n_i == n){
+            //only have incast port
+            if(m_AASDTstate == INCAST){
+                //std::cout<<"-------this is INCAST state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha + 1 + n - n_i);
+                    m_stateChangePtr->Set(0);
+                }
+                if(m_isDropPacket){
+                    //std::cout<<"-------Drop Packet unlimited-------"<<std::endl;
+                    SetdtAlphaExp(m_dtInitialAlpha + 1 + n);
+                    m_isDropPacket = false;
+                }
+            }else{
+                //std::cout<<"-------this is AASDTNORMAL state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha);
+                    m_stateChangePtr->Set(0);
+                }
+            }
+        }else if(n_n + n_c == n){
+            //only have CONGESTION port
+            if(m_AASDTstate == CONGESTION){
+                //std::cout<<"-------this is CONGESTION state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha + n_c);
+                    m_stateChangePtr->Set(0);
+                }
+            }else{
+                //std::cout<<"-------this is AASDTNORMAL state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha);
+                    m_stateChangePtr->Set(0);
+                }
+            }
+        }else{
+            //std::cout<<n_n<<n_i<<n_c<<n_ci<<n_cc<<std::endl;
+            //COEXIST
+            if(m_AASDTstate == COEXIST_I){
+                //std::cout<<"-------this is COEXIST_I state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    if(n_i + n_c == 0){
+                        SetdtAlphaExp(m_dtInitialAlpha + n + 1 + n_cc - n_ci);
+                    }else{
+                        SetdtAlphaExp(m_dtInitialAlpha + n + 1 + n_c - n_i);
+                    }
+                    m_stateChangePtr->Set(0);
+                }
+                //std::cout<<m_dtAlphaExp<<std::endl;
+            }else if(m_AASDTstate == COEXIST_C){
+                //std::cout<<"-------this is COEXIST_C state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    if(n_i + n_c == 0){
+                        SetdtAlphaExp(m_dtInitialAlpha + n_cc - n_ci);
+                    }else{
+                        SetdtAlphaExp(m_dtInitialAlpha + n_c - n_i);
+                    }
+                    m_stateChangePtr->Set(0);
+                }
+            }else{
+                //std::cout<<"-------this is AASDTNORMAL state-------"<<std::endl;
+                if(m_stateChangePtr->Get() > 0){
+                    SetdtAlphaExp(m_dtInitialAlpha);
+                    m_stateChangePtr->Set(0);
+                }
+            }
+        }
+        m_threshold = (m_dtAlphaExp >= 0) ? (availBuffer << m_dtAlphaExp) : (availBuffer >> (-m_dtAlphaExp));
+    }else{
+        std::cout << "Error in threshold calculate" << std::endl;
+    }   
 }
 
 void Switch::Calculate(){
@@ -292,6 +450,9 @@ void Switch::SetSharedBufferSize(uint32_t sharedBufferSize){
 
 void Switch::SetdtAlphaExp(int alphaExp){;
     m_dtAlphaExp = alphaExp;
+}
+int Switch::GetdtAlphaExp(){;
+    return m_dtAlphaExp;
 }
 
 void Switch::SetdtInitialAlphaExp(int alphaExp){

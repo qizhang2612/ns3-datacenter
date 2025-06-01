@@ -19,6 +19,11 @@ public:
 	SwitchMmu(void);
 
 	//zqadd
+	uint64_t m_threshold;
+	uint64_t m_remaining;
+	void SetRemaining(uint64_t remaining);
+	uint64_t GetRemaining();
+	void SetThreshold(uint64_t threshold);
 	double GetGHeadroom(uint32_t port, uint32_t qIndex,int index);
 	uint64_t GetAIHeadroom();
 	void GetLSTMHeadroom(uint32_t port, uint32_t qIndex);

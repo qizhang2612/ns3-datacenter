@@ -49,6 +49,8 @@ private:
 	static uint32_t EcmpHash(const uint8_t* key, size_t len, uint32_t seed);
 	void CheckAndSendPfc(uint32_t inDev, uint32_t qIndex);
 	void CheckAndSendResume(uint32_t inDev, uint32_t qIndex);
+
+	void initSwitch(int strategy,int PORTNUM,int ALPHA,int BUFFERSIZE);
 public:
 	enum MmuKind { Normal,AISIH};
   //Ptr<BroadcomNode> m_broadcom;
