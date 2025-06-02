@@ -66,7 +66,10 @@ SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
 	// //m_switch->SetStrategy(TDT);
 	// //m_switch->SetStrategy(AASDT);
 	// m_switch->SetdtInitialAlphaExp(-4);
-	int strategy = DT;
+	//int strategy = DT;
+	//int strategy = EDT;
+	int strategy = TDT;
+	// int strategy = AASDT;
 	int PORTNUM = 32;
 	int ALPHA = -4;
 	int BUFFERSIZE = 2649088;

@@ -707,8 +707,8 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 				uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed;
 				SetRemaining(remaining);
 				//std::cout << "remaining: " << remaining << " ingressSharedPool: " << ingressSharedPool << " ingressPoolSharedUsed:" << ingressPoolSharedUsed << " alpha: "<< alphaIngress[port][qIndex] << std::endl;
-				//return std::min(uint64_t(m_threshold), UINT64_MAX - 1024 * 1024);
-				return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
+				return std::min(uint64_t(m_threshold), UINT64_MAX - 1024 * 1024);
+				//return std::min(uint64_t(alphaIngress[port][qIndex] * (remaining)), UINT64_MAX - 1024 * 1024);
 			}
 			else {
 				// ingressPoolShared is full. There is no `remaining` buffer in ingressPoolShared.
