@@ -1,13 +1,17 @@
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
+import os
+# 新增：保存详细 FCT 值的目录
+OUTPUT_DIR = "result/detail_fct"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 # 常量定义
 #WORK_LOADS = ['cache', 'mining', 'alistorage', 'hadoop']
 WORK_LOADS = ['search']
 BACK_LOADS = [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 #CC_KINDS = ['PowerTCP', 'DCQCN', 'HPCC', 'None']
-CC_KINDS = ['PowerTCP']
-#CC_KINDS = ['DCQCN']
+#CC_KINDS = ['PowerTCP']
+CC_KINDS = ['DCQCN']
 POLICIES = ['AISIH', 'Normal']
 COLORS = {
     'AISIH': 'r', 
@@ -73,8 +77,45 @@ def precompute_intersections():
                 intersection = keys50 & keys80
                 intersection_cache[(cc_kind, back_load, burst_load, work_load)] = intersection
 
+# def read_fct_data(policy_file, base_file, cc_kind, back_load, burst_load, work_load):
+#     """使用缓存数据快速计算比率"""
+#     # 获取预先计算的交集
+#     intersection = intersection_cache.get((cc_kind, back_load, burst_load, work_load), set())
+    
+#     # 处理策略文件
+#     _, policy_data = read_file_keys_and_data(policy_file)
+#     back_times = []
+#     burst_times = []
+#     for key, size, time in policy_data:
+#         if key in intersection:
+#             if size == 65536.0:
+#                 burst_times.append(time)
+#             else:
+#                 back_times.append(time)
+    
+#     # 处理基准文件
+#     _, base_data = read_file_keys_and_data(base_file)
+#     base_back_times = []
+#     base_burst_times = []
+#     for key, size, time in base_data:
+#         if key in intersection:
+#             if size == 65536.0:
+#                 base_burst_times.append(time)
+#             else:
+#                 base_back_times.append(time)
+    
+#     # 计算平均时间比率
+#     back_avg = sum(back_times)/len(back_times) if back_times else 0
+#     burst_avg = sum(burst_times)/len(burst_times) if burst_times else 0
+#     base_back_avg = sum(base_back_times)/len(base_back_times) if base_back_times else 0
+#     base_burst_avg = sum(base_burst_times)/len(base_burst_times) if base_burst_times else 0
+    
+#     back_ratio = back_avg / base_back_avg if base_back_avg else 0
+#     burst_ratio = burst_avg / base_burst_avg if base_burst_avg else 0
+#     return back_ratio, burst_ratio
+
 def read_fct_data(policy_file, base_file, cc_kind, back_load, burst_load, work_load):
-    """使用缓存数据快速计算比率"""
+    """使用缓存数据快速计算比率，并记录原始 back_avg 和 burst_avg"""
     # 获取预先计算的交集
     intersection = intersection_cache.get((cc_kind, back_load, burst_load, work_load), set())
     
@@ -100,12 +141,19 @@ def read_fct_data(policy_file, base_file, cc_kind, back_load, burst_load, work_l
             else:
                 base_back_times.append(time)
     
-    # 计算平均时间比率
+    # 计算平均时间
     back_avg = sum(back_times)/len(back_times) if back_times else 0
     burst_avg = sum(burst_times)/len(burst_times) if burst_times else 0
     base_back_avg = sum(base_back_times)/len(base_back_times) if base_back_times else 0
     base_burst_avg = sum(base_burst_times)/len(base_burst_times) if base_burst_times else 0
-    
+
+    # 写入到 txt 文件
+    filename = f"{OUTPUT_DIR}/detail_{work_load}_{cc_kind}.txt"
+    with open(filename, 'a') as f:  # 追加模式
+        f.write(f"{back_load}\t{burst_load}\t")
+        f.write(f"{back_avg}\t{burst_avg}\t{base_back_avg}\t{base_burst_avg}\n")
+
+    # 计算比率
     back_ratio = back_avg / base_back_avg if base_back_avg else 0
     burst_ratio = burst_avg / base_burst_avg if base_burst_avg else 0
     return back_ratio, burst_ratio
@@ -208,11 +256,11 @@ def plot_figure(cc_kind, traffic_kind, work_load, plot_data):
     
     plt.legend(loc='best', fontsize=12)
     plt.title(f'{cc_kind} - {traffic_kind.capitalize()} Traffic ({work_load})', fontsize=14)
-    plt.xlabel('Fan-in Load', fontsize=12)
+    plt.xlabel('back Load', fontsize=12)
     plt.ylabel('Normalized FCT', fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.7)
 
-    plt.ylim(0.6, 1.1)
+    plt.ylim(0.4, 1.1)
 
     plt.tight_layout()
     plt.savefig(f'image/benchmark_fct_{work_load}_{traffic_kind}_{cc_kind}.png', dpi=300)

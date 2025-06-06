@@ -98,7 +98,7 @@ def exp_benchmark_fct(  # pylint: disable=W0102
     with open(test_dir / 'topo.txt', 'w') as topof:
         topo.gen(set(hosts), set(sw), links, output=topof)
 
-    #control the same flow between SIH and DSH
+    #control the same flow between SIH and AISIH
     copy_src = f'./data/exp_benchmark_fct-search-xpod_Normal-{sche}-{cc}-{back_load}back-{burst_load}burst-{burst_size}KB-{mx_pg+1}pg/flow.txt'
     copy_dst = f'./data/exp_benchmark_fct-search-xpod_{mmu_kind}-{sche}-{cc}-{back_load}back-{burst_load}burst-{burst_size}KB-{mx_pg+1}pg/flow.txt'
     if mmu_kind != 'Normal' and os.path.exists(copy_src):
@@ -228,7 +228,6 @@ def main() -> None:
                 #for mmu in ['Normal', 'AISIH']:
                 for mmu in ['Normal']:
                     ks : List[Any]
-                    # if mmu == 'Normal' or mmu == 'DSH' or mmu == 'DSHnoSH' or mmu == 'DSHnoIH' or mmu == 'Adaptive' or mmu == 'DSHPLUS' or mmu == 'Normal50' or mmu == 'Normal80':
                     if mmu == 'Normal' or mmu == 'AISIH':
                         ks = [pg+1]
                     else:

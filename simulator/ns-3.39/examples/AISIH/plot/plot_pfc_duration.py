@@ -64,24 +64,12 @@ for i in range(0, 11):
     pfc_time = pfc_time / 1e6
     y2_values.append(pfc_time)
 
-# print(y1_values)
-# print(y2_values)
 
 plt.figure(figsize=(10, 8))  
 
-y1_values_modified = []
-for x, y in zip(x1_values, y1_values):
-    if x <= 0.3:
-        y1_values_modified.append(0)
-    elif x <= 0.7:
-        y1_values_modified.append(y/8)
-    else:
-        y1_values_modified.append(y/6)
   
 # 绘制第一条线，使用虚线、红色，并设置线宽和标记  
-# plt.plot(x1_values, y1_values, marker='o', markersize=15,linestyle='-', color='r', linewidth=3, label='LSTM-AH')  
-
-plt.plot(x1_values, y1_values_modified, marker='o', markersize=15,linestyle='-', color='r', linewidth=3, label='LSTM-AH')   
+plt.plot(x1_values, y1_values, marker='o', markersize=15,linestyle='-', color='r', linewidth=3, label='LSTM-AH')  
 # 绘制第二条线，使用实线、蓝色，并设置标记  
 plt.plot(x2_values, y2_values, marker='x', markersize=15,linestyle = '--', color='b',linewidth=3,label='SIH') 
   

@@ -18,6 +18,7 @@ set(source_files
     model/nix-vector.cc
     model/node-list.cc
     model/node.cc
+    model/switch.cc
     model/packet-metadata.cc
     model/packet-tag-list.cc
     model/packet.cc
@@ -101,6 +102,7 @@ set(header_files
     model/nix-vector.h
     model/node-list.h
     model/node.h
+    model/switch.h
     model/packet-metadata.h
     model/packet-tag-list.h
     model/packet.h
