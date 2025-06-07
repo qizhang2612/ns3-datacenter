@@ -4,6 +4,20 @@
 #include <unordered_map>
 #include <ns3/node.h>
 #include "ns3/nstime.h"
+// #include "ns3/socket.h"
+// #include "ns3/packet.h"
+// #include "ns3/tcp-socket-factory.h"
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <cstring>
+#include <iostream>
+#include <sstream>
+#include <cstdlib>
+#include <cerrno>
+#include <vector>
 
 namespace ns3 {
 
@@ -21,6 +35,10 @@ public:
 	//zqadd
 	uint64_t m_threshold;
 	uint64_t m_remaining;
+	Ptr<Node> m_node;      
+
+	void SetNode(Ptr<Node> node); 
+	
 	void SetRemaining(uint64_t remaining);
 	uint64_t GetRemaining();
 	void SetThreshold(uint64_t threshold);
@@ -35,12 +53,17 @@ public:
 	std::ofstream csvFile;
     bool headerWritten = false;
 	uint64_t firstHeadroom;
+    std::ofstream m_csvFile; // 成员变量用于持久化打开文件
 	int GetRunQueueNum(uint32_t port);
 	void WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,uint64_t time);
 	void UpdataPauseTime(uint32_t port, uint32_t qIndex);
 	void ReadHeadroomCycle(uint32_t port, uint32_t qIndex,int index);
 	std::string GetCsvFilePath(uint32_t port, uint32_t qIndex) const;
 	std::string GetGrsvFilePath(uint32_t port, uint32_t qIndex) const;
+
+
+	double EstimateMaxPredictionError(uint32_t port, uint32_t qIndex, double currentError);
+	double UpdateAndEstimateError(uint32_t port, uint32_t qIndex);
 
 	bool CheckIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
 	bool CheckEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize, uint32_t type, uint32_t unsched);
@@ -157,6 +180,22 @@ public:
 	uint64_t lastHeadroom[pCnt][qCnt];
 	uint64_t queueLength[pCnt][qCnt];
 	double queueRate[pCnt][qCnt];
+	double qGrowRate[pCnt][qCnt];
+	double qGrowRate10[pCnt][qCnt];
+	double qGrowRate20[pCnt][qCnt];
+	double qGrowRatePre[pCnt][qCnt];
+
+	std::vector<double> errorHistory[pCnt][qCnt];
+
+	// double SendAndReceiveHeadroomRate(Ptr<Socket> socket,
+    //                               int port,
+    //                               int qIndex,
+    //                               uint64_t length,
+    //                               uint64_t time,
+    //                               bool pfcStopStatus,
+    //                               double qGrowRate,
+    //                               double qGrowRate20,
+    //                               double qGrowRate10);
 	
 	
 

@@ -78,10 +78,12 @@ SwitchNode::SwitchNode(MmuKind kind) : m_mmu_kind (kind) {
     {
     case Normal:
       m_mmu = CreateObject<SwitchMmu> ();
+	  //m_mmu->SetNode(this); 
       break;
 	case AISIH:
       //m_mmu = CreateObject<AiMmu> ();
 	  m_mmu = CreateObject<SwitchMmu> ();
+	  //m_mmu->SetNode(this); 
 	  m_mmu->SetUseAI(true);
 	  //std::cout<<"是否使用AI"<<m_mmu->GetUseAI()<<std::endl;
       break;

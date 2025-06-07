@@ -11,6 +11,10 @@
 #include "ns3/simulator.h"
 #include "ns3/random-variable.h"
 #include "switch-mmu.h"
+// #include "ns3/socket.h"
+// #include "ns3/packet.h"
+#include <sstream>
+#include <cstdio>
 
 #define LOSSLESS 0
 #define LOSSY 1
@@ -22,6 +26,8 @@
 # define IB 104
 # define ABM 110
 # define REVERIE 111
+
+#define MAX_HISTORY 20     // 每个队列保留的历史误差数量
 
 NS_LOG_COMPONENT_DEFINE("SwitchMmu");
 namespace ns3 {
@@ -90,6 +96,12 @@ SwitchMmu::SwitchMmu(void) {
 
 	Reveriegamma = 0.99;
 
+    m_csvFile.open("headroom.csv", std::ios::app); // 自动创建或追加
+    if (!m_csvFile.is_open())
+    {
+        NS_LOG_ERROR("无法创建或打开 headroom.csv");
+    }
+
 	for (uint32_t port = 0; port < pCnt; port++) {
 		for (uint32_t q = 0; q < qCnt; q++) {
 			// buffer configuration.
@@ -112,6 +124,12 @@ SwitchMmu::SwitchMmu(void) {
 			nowHeadroom[port][q] = false;
 			queueLength[port][q] = 0;
 			queueRate[port][q] = 0.0;
+			qGrowRate[port][q] = 0.0;
+			qGrowRate10[port][q] = 0.0;
+			qGrowRate20[port][q] = 0.0;
+			qGrowRatePre[port][q] = 0.0;
+			errorHistory[port][q] = {};
+
 
 			// per queue run time
 			ingress_bytes[port][q] = 0; // total ingress bytes USED at each queue. This includes, bytes from reserved, ingress pool as well as any headroom.
@@ -473,20 +491,219 @@ void SwitchMmu::writeData(uint32_t port, uint32_t qIndex){
 	std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<queueLength[port][qIndex]<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<" queueRate:"<<queueRate[port][qIndex]<<std::endl;
 }
 
-void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
-	writeData(port,qIndex);
-	ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
-	index[port][qIndex]++;
+// void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
+// 	// writeData(port,qIndex);
+// 	// ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
+// 	// index[port][qIndex]++;
+// 	bool pfcStopStatus;
+// 	if(xoffUsed[port][qIndex] >  0){
+// 		pfcStopStatus = true;
+// 	}else{
+// 		pfcStopStatus = false;
+// 	}
+// 	Ptr<Node> node = m_node;
+
+//     if (!node)
+//     {
+//         NS_LOG_ERROR("Node 未设置，无法创建 Socket");
+//         return;
+//     }
+	
+// 	Ptr<Socket> socket = Socket::CreateSocket(node, TcpSocketFactory::GetTypeId());
+// 	socket->Connect(InetSocketAddress(Ipv4Address("127.0.0.1"), 65432)); 
+// 	double headroomRate = SendAndReceiveHeadroomRate(socket,port,qIndex,ingress_bytes[port][qIndex],GetNowTimeWs()
+// 				,pfcStopStatus,qGrowRate[port][qIndex],qGrowRate10[port][qIndex],qGrowRate20[port][qIndex]);
+// 	std::cout<<"headroomRate:"<<headroomRate<<std::endl;
+// }
+
+
+
+/**
+ * \brief 根据历史预测误差估计在 99% 置信水平下的最大预测误差 E_max
+ * \param port 当前端口号
+ * \param qIndex 当前队列索引（替代原来的 queue）
+ * \param currentError 当前周期的预测误差
+ * \return 在 99% 置信水平下的最大预测误差估计值 E_max
+ */
+double SwitchMmu::EstimateMaxPredictionError(uint32_t port, uint32_t qIndex, double currentError)
+{
+    // 添加当前误差到历史记录
+    errorHistory[port][qIndex].push_back(currentError);
+
+    // 限制历史长度，保留最近 MAX_HISTORY 条数据
+    if (errorHistory[port][qIndex].size() > MAX_HISTORY)
+    {
+        errorHistory[port][qIndex].erase(errorHistory[port][qIndex].begin());
+    }
+
+    int n = errorHistory[port][qIndex].size();
+    if (n < 2) return currentError; // 数据不足时返回当前误差
+
+    double sum = 0.0, sumSq = 0.0;
+    for (double e : errorHistory[port][qIndex]) {
+        sum += e;
+        sumSq += e * e;
+    }
+
+    double mean = sum / n;
+    double variance = (sumSq / n) - (mean * mean);
+    double stddev = std::sqrt(variance);
+
+    const double Z_SCORE_99_PERCENT = 2.576; // 正态分布下 99% 置信水平对应的 z-score
+    double emax = mean + Z_SCORE_99_PERCENT * stddev;
+
+    return emax;
+}
+
+double SwitchMmu::UpdateAndEstimateError(uint32_t port, uint32_t qIndex)
+{
+    // 假设你已经维护了上一周期和当前周期的增长率
+    double currentError = std::abs(qGrowRate[port][qIndex] - qGrowRatePre[port][qIndex]);
+
+    double emax = EstimateMaxPredictionError(port, qIndex, currentError);
+
+	if(emax > 0.1){
+		return 0.1;
+	}else{
+		return emax;
+	}
+
+    NS_LOG_UNCOND("Port: " << port << ", qIndex: " << qIndex << ", Estimated Max Error: " << emax);
+}
+
+void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex)
+{
+    bool pfcStopStatus = (xoffUsed[port][qIndex] > 0);
+
+    // 构造 JSON 请求字符串
+    std::ostringstream oss;
+    oss.precision(6);
+    oss << std::fixed;
+
+    oss << "{"
+        << "\"port\":" << port << ","
+        << "\"qIndex\":" << qIndex << ","
+        << "\"length\":" << ingress_bytes[port][qIndex] << ","
+        << "\"time\":" << GetNowTimeWs() << ","
+        << "\"pfcStopStatus\":" << pfcStopStatus << ","
+        << "\"qGrowRate\":" << qGrowRate[port][qIndex] << ","
+        << "\"qGrowRate20\":" << qGrowRate20[port][qIndex] << ","
+        << "\"qGrowRate10\":" << qGrowRate10[port][qIndex]
+        << "}";
+
+    std::string jsonStr = oss.str();
+
+	std::cout << "jsonStr: " << jsonStr << std::endl;
+	
+
+    // 创建 socket
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        NS_LOG_ERROR("无法创建 socket");
+        return;
+    }
+
+    // 设置服务器地址
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(65432); // Python 服务监听端口
+
+    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+        NS_LOG_ERROR("无效的地址或地址不可用");
+        close(sockfd);
+        return;
+    }
+
+    // 连接服务器
+    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        NS_LOG_ERROR("连接失败：" << strerror(errno));
+        close(sockfd);
+        return;
+    }
+
+    // 发送 JSON 请求
+    if (send(sockfd, jsonStr.c_str(), jsonStr.size(), 0) < 0) {
+        NS_LOG_ERROR("发送请求失败：" << strerror(errno));
+        close(sockfd);
+        return;
+    }
+
+    // 接收响应
+    char buffer[1024] = {0};
+    ssize_t valread = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+    if (valread < 0) {
+        NS_LOG_ERROR("接收响应失败：" << strerror(errno));
+        close(sockfd);
+        return;
+    }
+
+    // 解析返回值
+    char* endPtr;
+    double headroomRate = std::strtod(buffer, &endPtr);
+
+    if (endPtr == buffer) {
+        NS_LOG_ERROR("解析返回值失败");
+    } else {
+        std::cout << "headroomRate: " << headroomRate << std::endl;
+		double eMax = UpdateAndEstimateError(port,qIndex);
+		
+		int nums = GetRunQueueNum(port); 
+		double lastRate = 0.0;
+		double aiRate = headroomRate + eMax;
+		if(nums == 0){
+			lastRate = aiRate;
+		}else if(aiRate > 1 / nums){
+			lastRate = 1 / nums;
+		}else{
+			lastRate = aiRate;
+		}
+		aiHeadroom[port][qIndex] = lastRate * firstHeadroom;
+
+		if (xoffTotalUsed > 0) {
+            aiHeadroom[port][qIndex] = aiHeadroom[port][qIndex] > xoff[port][qIndex] ? aiHeadroom[port][qIndex] : xoff[port][qIndex];
+        }
+
+		qGrowRatePre[port][qIndex] = headroomRate;
+    }
+
+    // 关闭 socket
+    close(sockfd);
+}
+
+
+void SwitchMmu::SetNode(Ptr<Node> node)
+{
+    m_node = node;
 }
 
 //更新对应的净空缓存
-void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
-	GetLSTMHeadroom(port,qIndex);
-	//writeData(port,qIndex);
-	// ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
-	// index[port][qIndex]++;
-	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
-	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
+// void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
+// 	GetLSTMHeadroom(port,qIndex);
+// 	//writeData(port,qIndex);
+// 	// ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
+// 	// index[port][qIndex]++;
+// 	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
+// 	uint64_t time = GetNowTimeWs();
+// 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
+// }
+
+void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex)
+{
+    GetLSTMHeadroom(port, qIndex);
+
+    uint64_t time = GetNowTimeWs();
+    double aiheadVal = aiHeadroom[port][qIndex];
+
+    if (m_csvFile.is_open())
+    {
+        m_csvFile << port << ","
+                  << qIndex << ","
+                  << time << ","
+                  << aiheadVal << std::endl;
+    }
+
+    SetHeadroom(aiheadVal, port, qIndex);
 }
 
 int SwitchMmu::GetRunQueueNum(uint32_t port){
@@ -572,7 +789,7 @@ uint64_t SwitchMmu::GetAIHeadroom(){
 		for (uint32_t qIndex = 1; qIndex < qCnt; qIndex++) {
 			//result += xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
 			result += firstHeadroom-aiHeadroom[port][qIndex];
-			std::cout<<"port: "<<port<<"qIndex: "<<qIndex<<"result: "<<result<<std::endl;
+			//std::cout<<"port: "<<port<<"qIndex: "<<qIndex<<"result: "<<result<<std::endl;
 		}
 	}
 	std::cout<<"AI调整后增加的缓存："<<result<<std::endl;
@@ -596,7 +813,7 @@ void SwitchMmu::WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex
 	}else{
 		pfcStopStatus = false;
 	}
-	//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<length<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<std::endl;
+	// std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<length<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<std::endl;
 	// bool pfcStopStatus = xoffUsed[port][qIndex] > 0;
 	// //std::cout<<"Time:"<<time<<std::endl;
     // // Create a file name based on port and qIndex.
@@ -652,17 +869,71 @@ uint64_t SwitchMmu::GetRemaining(){
 }
 
 
+// double SwitchMmu::SendAndReceiveHeadroomRate(Ptr<Socket> socket,
+//                                   int port,
+//                                   int qIndex,
+//                                   uint64_t length,
+//                                   uint64_t time,
+//                                   bool pfcStopStatus,
+//                                   double qGrowRate,
+//                                   double qGrowRate20,
+//                                   double qGrowRate10)
+// {
+//     // 手动构造 JSON 字符串
+//     std::ostringstream oss;
+//     oss.precision(6);  // 设置浮点数精度
+//     oss << std::fixed; // 固定小数格式输出
+
+//     oss << "{"
+//         << "\"port\":" << port << ","
+//         << "\"qIndex\":" << qIndex << ","
+//         << "\"length\":" << length << ","
+//         << "\"time\":" << time << ","
+//         << "\"pfcStopStatus\":" << pfcStopStatus << ","
+//         << "\"qGrowRate\":" << qGrowRate << ","
+//         << "\"qGrowRate20\":" << qGrowRate20 << ","
+//         << "\"qGrowRate10\":" << qGrowRate10
+//         << "}";
+
+//     std::string jsonStr = oss.str();
+
+//     // 发送 JSON 请求
+//     socket->Send((uint8_t*)jsonStr.c_str(), jsonStr.size(), 0);
+
+//     // 接收响应
+//     uint8_t buffer[1024];
+//     Address from;
+//     Ptr<Packet> packet = socket->RecvFrom(1024, 0, from);
+//     if (packet && packet->GetSize() > 0)
+//     {
+//         packet->CopyData(buffer, packet->GetSize());
+//         buffer[packet->GetSize()] = '\0'; // 添加字符串结束符
+
+//         char* endPtr;
+//         double headroomRate = std::strtod((char*)buffer, &endPtr);
+
+//         if (endPtr != (char*)buffer) // 成功转换为数字
+//         {
+//             return headroomRate;
+//         }
+//     }
+
+//     // 如果出错，返回 NaN 表示失败
+//     return std::nan("1");
+// }
+
+
 // DT's threshold = Alpha x remaining.
 // A sky high threshold for a queue can be emulated by setting the corresponding alpha to a large value. eg., UINT32_MAX
 uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string inout, uint32_t type) {
 	if (inout == "ingress") {
 		//int64_t pqNowTime = GetNowTime();
 		uint64_t pqNowTime = GetNowTimeWs();
-		std::cout<<"pqNowTime:"<<pqNowTime<<std::endl;
+		//std::cout<<"pqNowTime:"<<pqNowTime<<std::endl;
 		if(pqTime[port][qIndex] != pqNowTime){
 			WriteQueueLengthAndTimeEveryCycle(port, qIndex, ingress_bytes[port][qIndex], GetNowTimeWs());
 			pqTime[port][qIndex] = pqNowTime;
-			std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" ingress_bytes:"<<ingress_bytes[port][qIndex]<<" pqTime:"<<pqTime[port][qIndex]<<std::endl;
+			//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" ingress_bytes:"<<ingress_bytes[port][qIndex]<<" pqTime:"<<pqTime[port][qIndex]<<std::endl;
 			//queueLength[port][qIndex] = ingress_bytes[port][qIndex];
 		}
 		UpdataPauseTime(port, qIndex);
@@ -683,11 +954,14 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 						queueLength[port][qIndex] = ingress_bytes[port][qIndex];
 					}else{
 						queueRate[port][qIndex] = (ingress_bytes[port][qIndex] - queueLength[port][qIndex]) / 10 *1000*1000/1024;
+						qGrowRate20[port][qIndex] = qGrowRate10[port][qIndex];
+						qGrowRate10[port][qIndex] = qGrowRate[port][qIndex];
+						qGrowRate[port][qIndex] = queueRate[port][qIndex];
 					}
 					UpdateHeadroom(port, qIndex);
 					lastUpdateTime[port][qIndex] = pqNowTime;
 				}
-				std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<"lastUpdateTime:"<<lastUpdateTime[port][qIndex]<<" pqNowTime:"<<pqNowTime<<std::endl;
+				//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<"lastUpdateTime:"<<lastUpdateTime[port][qIndex]<<" pqNowTime:"<<pqNowTime<<std::endl;
 				remaining += GetAIHeadroom();
 				//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<"lastUpdateTime:"<<lastUpdateTime[port][qIndex]<<" pqNowTime:"<<pqNowTime<<std::endl;
 				//uint64_t remaining = ingressSharedPool - ingressPoolSharedUsed + GetAIHeadroom(port, qIndex);
