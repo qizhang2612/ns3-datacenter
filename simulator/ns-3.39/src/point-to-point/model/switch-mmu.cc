@@ -395,7 +395,7 @@ std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
 
 //预测完从文本文件读取 暂时顶替ai黑盒
 void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
-	std::cout<<"对应的index:"<<index<<std::endl;
+	//std::cout<<"对应的index:"<<index<<std::endl;
     // 动态构建CSV文件路径
     std::string filePath = GetCsvFilePath(port, qIndex);
 
@@ -437,7 +437,7 @@ void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 					// if(headroomRate >= 1){
 					// 	headroomRate = 1;
 					// }
-                    std::cout<<"headroomRate:"<<headroomRate<<std::endl;
+                    //std::cout<<"headroomRate:"<<headroomRate<<std::endl;
 					//uint64_t headroom = headroomRate * firstHeadroom;
 
                     // 暂停状态下的headroom调整策略
@@ -489,7 +489,7 @@ void SwitchMmu::writeData(uint32_t port, uint32_t qIndex){
 		pfcStopStatus = false;
 	}
 	uint64_t time = GetNowTimeWs();
-	std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<queueLength[port][qIndex]<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<" queueRate:"<<queueRate[port][qIndex]<<std::endl;
+	//std::cout<<"port:"<<port<<" qIndex:"<<qIndex<<" length:"<<queueLength[port][qIndex]<<" time:"<<time<<" pfcStopStatus:"<<pfcStopStatus<<" queueRate:"<<queueRate[port][qIndex]<<std::endl;
 }
 
 // void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
@@ -564,6 +564,11 @@ double SwitchMmu::UpdateAndEstimateError(uint32_t port, uint32_t qIndex)
     double emax = EstimateMaxPredictionError(port, qIndex, currentError);
 
 	if(emax > 0.1){
+		// int nums = GetRunQueueNum(port); 
+		// if(nums == 0){
+		// 	return 0.0;
+		// }
+		// return 1/nums;
 		return 0.1;
 	}else{
 		return emax;
@@ -572,8 +577,7 @@ double SwitchMmu::UpdateAndEstimateError(uint32_t port, uint32_t qIndex)
     NS_LOG_UNCOND("Port: " << port << ", qIndex: " << qIndex << ", Estimated Max Error: " << emax);
 }
 
-void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex)
-{
+void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
     bool pfcStopStatus = (xoffUsed[port][qIndex] > 0);
 
     // 构造 JSON 请求字符串
@@ -672,26 +676,13 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex)
     close(sockfd);
 }
 
-
-void SwitchMmu::SetNode(Ptr<Node> node)
-{
-    m_node = node;
-}
-
-//更新对应的净空缓存
-// void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex){
-// 	GetLSTMHeadroom(port,qIndex);
-// 	//writeData(port,qIndex);
-// 	// ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
-// 	// index[port][qIndex]++;
-// 	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
-// 	uint64_t time = GetNowTimeWs();
-// 	SetHeadroom(aiHeadroom[port][qIndex],port,qIndex);
-// }
-
 void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex)
 {
     GetLSTMHeadroom(port, qIndex);
+	//writeData(port,qIndex);
+	// ReadHeadroomCycle(port,qIndex,index[port][qIndex]);
+	// index[port][qIndex]++;
+	//lastHeadroom[port][qIndex] = xoff[port][qIndex];
 
     uint64_t time = GetNowTimeWs();
     double aiheadVal = aiHeadroom[port][qIndex];
@@ -717,7 +708,7 @@ int SwitchMmu::GetRunQueueNum(uint32_t port){
 	return result;
 }
 
-//获取余量headroom,同时包含预测保障逻辑
+//获取余量headroom,同时包含预测保障逻辑，无用
 double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 	// 动态构建CSV文件路径
     std::string filePath = GetGrsvFilePath(port,qIndex);
@@ -793,7 +784,7 @@ uint64_t SwitchMmu::GetAIHeadroom(){
 			//std::cout<<"port: "<<port<<"qIndex: "<<qIndex<<"result: "<<result<<std::endl;
 		}
 	}
-	std::cout<<"AI调整后增加的缓存："<<result<<std::endl;
+	//std::cout<<"AI调整后增加的缓存："<<result<<std::endl;
 	return result;
 	//return xoff[port][qIndex]-lastHeadroom[port][qIndex]>0?xoff[port][qIndex]-lastHeadroom[port][qIndex]:0;
 }

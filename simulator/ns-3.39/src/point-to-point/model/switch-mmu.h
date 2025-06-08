@@ -35,9 +35,6 @@ public:
 	//zqadd
 	uint64_t m_threshold;
 	uint64_t m_remaining;
-	Ptr<Node> m_node;      
-
-	void SetNode(Ptr<Node> node); 
 	
 	void SetRemaining(uint64_t remaining);
 	uint64_t GetRemaining();
