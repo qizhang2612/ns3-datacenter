@@ -171,6 +171,7 @@ public:
 	bool useAI;
 	//int64_t lastUpdateTime;
 	uint64_t lastUpdateTime[pCnt][qCnt];
+	uint64_t lastUpdateTime2[pCnt][qCnt];
 	uint64_t pqTime[pCnt][qCnt];
 	uint64_t pauseTime[pCnt][qCnt];
 	uint64_t pauseStartTime[pCnt][qCnt];

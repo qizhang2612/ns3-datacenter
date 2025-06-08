@@ -121,6 +121,7 @@ SwitchMmu::SwitchMmu(void) {
 			lastHeadroom[port][q]=0;
 			firstHeadroom = 0;
 			lastUpdateTime[port][q] = 0;
+			lastUpdateTime2[port][q] = 0;
 			nowHeadroom[port][q] = false;
 			queueLength[port][q] = 0;
 			queueRate[port][q] = 0.0;
@@ -948,16 +949,24 @@ uint64_t SwitchMmu::DynamicThreshold(uint32_t port, uint32_t qIndex, std::string
 				if(lastUpdateTime[port][qIndex] == 0){
 					lastUpdateTime[port][qIndex] = pqNowTime;
 				}
-				if (lastUpdateTime[port][qIndex] != 0 && pqNowTime - lastUpdateTime[port][qIndex] >= 10){
-					std::cout<<"-----------UpdateHeadroom-----------"<<std::endl;
+				if(lastUpdateTime2[port][qIndex] == 0){
+					lastUpdateTime2[port][qIndex] = pqNowTime;
+				}
+				if (pqNowTime - lastUpdateTime2[port][qIndex] >= 1){
+					//std::cout<<"-----------UpdateHeadroom-----------"<<std::endl;
 					if(queueLength[port][qIndex] == 0){
 						queueLength[port][qIndex] = ingress_bytes[port][qIndex];
 					}else{
-						queueRate[port][qIndex] = (ingress_bytes[port][qIndex] - queueLength[port][qIndex]) / 10 *1000*1000/1024;
-						qGrowRate20[port][qIndex] = qGrowRate10[port][qIndex];
-						qGrowRate10[port][qIndex] = qGrowRate[port][qIndex];
-						qGrowRate[port][qIndex] = queueRate[port][qIndex];
+						queueRate[port][qIndex] = (ingress_bytes[port][qIndex] - queueLength[port][qIndex]) * 1000 * 1000 / (1024 * 1024);
+						
 					}
+					lastUpdateTime2[port][qIndex] = pqNowTime;
+				}
+				if (lastUpdateTime[port][qIndex] != 0 && pqNowTime - lastUpdateTime[port][qIndex] >= 10){
+					std::cout<<"-----------UpdateHeadroom-----------"<<std::endl;
+					qGrowRate20[port][qIndex] = qGrowRate10[port][qIndex];
+					qGrowRate10[port][qIndex] = qGrowRate[port][qIndex];
+					qGrowRate[port][qIndex] = queueRate[port][qIndex];
 					UpdateHeadroom(port, qIndex);
 					lastUpdateTime[port][qIndex] = pqNowTime;
 				}
