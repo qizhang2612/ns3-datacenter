@@ -652,6 +652,15 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
     } else {
         std::cout << "headroomRate: " << headroomRate << std::endl;
 		double eMax = UpdateAndEstimateError(port,qIndex);
+
+		qGrowRatePre[port][qIndex] = headroomRate;
+
+		if(headroomRate < 0){
+			headroomRate = 0;
+		}
+		if(headroomRate > 0){
+			nowHeadroom[port][qIndex] = true;
+		}
 		
 		int nums = GetRunQueueNum(port); 
 		double lastRate = 0.0;
@@ -668,8 +677,6 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
 		if (xoffTotalUsed > 0) {
             aiHeadroom[port][qIndex] = aiHeadroom[port][qIndex] > xoff[port][qIndex] ? aiHeadroom[port][qIndex] : xoff[port][qIndex];
         }
-
-		qGrowRatePre[port][qIndex] = headroomRate;
     }
 
     // 关闭 socket
