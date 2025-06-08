@@ -226,7 +226,7 @@ def main() -> None:
         for pg in [8]:
             pgmap, quantums = PGMAPS[pg]
             #for mmu in ['Normal', 'AISIH']:
-            for mmu in ['Normal']:
+            for mmu in ['AISIH']:
                 ks : List[Any]
                 if mmu == 'Normal' or mmu == 'AISIH':
                     ks = [pg+1]
