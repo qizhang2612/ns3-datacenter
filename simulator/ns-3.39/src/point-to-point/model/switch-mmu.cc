@@ -393,7 +393,7 @@ std::string SwitchMmu::GetGrsvFilePath(uint32_t port, uint32_t qIndex) const{
     return "/home/qzhang/ns3-datacenter/simulator/ns-3.39/examples/AISIH/gHeadroom/output_port" + std::to_string(port) + "_qIndex" + std::to_string(qIndex) + ".csv";
 }
 
-//预测完从文本文件读取 暂时顶替ai黑盒
+//预测完从文本文件读取 暂时顶替ai黑盒，无用
 void SwitchMmu::ReadHeadroomCycle(uint32_t port, uint32_t qIndex, int index) {
 	//std::cout<<"对应的index:"<<index<<std::endl;
     // 动态构建CSV文件路径
@@ -577,6 +577,8 @@ double SwitchMmu::UpdateAndEstimateError(uint32_t port, uint32_t qIndex)
     NS_LOG_UNCOND("Port: " << port << ", qIndex: " << qIndex << ", Estimated Max Error: " << emax);
 }
 
+
+//使用socket通信将输入特征转化为json字符串获取输出特征
 void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
     bool pfcStopStatus = (xoffUsed[port][qIndex] > 0);
 
@@ -651,6 +653,7 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
         NS_LOG_ERROR("解析返回值失败");
     } else {
         std::cout << "headroomRate: " << headroomRate << std::endl;
+		//先更新上个周期的emax,在更新这个周期的预测值
 		double eMax = UpdateAndEstimateError(port,qIndex);
 
 		qGrowRatePre[port][qIndex] = headroomRate;
@@ -687,6 +690,7 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
     close(sockfd);
 }
 
+//周期更新净空缓存
 void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex)
 {
     GetLSTMHeadroom(port, qIndex);
@@ -719,7 +723,7 @@ int SwitchMmu::GetRunQueueNum(uint32_t port){
 	return result;
 }
 
-//获取余量headroom,同时包含预测保障逻辑，无用
+//获取余量headroom,同时包含预测保障逻辑，现在无用
 double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 	// 动态构建CSV文件路径
     std::string filePath = GetGrsvFilePath(port,qIndex);
@@ -784,7 +788,7 @@ double SwitchMmu::GetGHeadroom(uint32_t port, uint32_t qIndex,int index){
 }
 
 //获取因AI调节增大的共享缓存空间
-//修改到获取所有的
+//修改完净空缓存后，获取所有的增加量增加至共享缓存
 uint64_t SwitchMmu::GetAIHeadroom(){
 	uint64_t result = 0;
 	//std::cout<<"firstHeadroom: "<<firstHeadroom<<std::endl;
@@ -808,7 +812,7 @@ bool SwitchMmu::GetUseAI(){
 	return useAI;
 }
 
-//记录队列状态信息
+//记录队列状态信息，获取AI原始数据
 void SwitchMmu::WriteQueueLengthAndTimeEveryCycle(uint32_t port, uint32_t qIndex,uint64_t length,uint64_t time){
 	bool pfcStopStatus;
 	if(xoffUsed[port][qIndex] >  0){
