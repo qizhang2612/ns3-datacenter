@@ -655,8 +655,9 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
 
 		qGrowRatePre[port][qIndex] = headroomRate;
 
-		if(headroomRate < 0){
+		if(headroomRate <= 0){
 			headroomRate = 0;
+			nowHeadroom[port][qIndex] = false;		
 		}
 		if(headroomRate > 0){
 			nowHeadroom[port][qIndex] = true;
@@ -671,6 +672,9 @@ void SwitchMmu::GetLSTMHeadroom(uint32_t port, uint32_t qIndex){
 			lastRate = 1 / nums;
 		}else{
 			lastRate = aiRate;
+		}
+		if(lastRate >= 1.0){
+			lastRate = 1.0;
 		}
 		aiHeadroom[port][qIndex] = lastRate * firstHeadroom;
 
@@ -694,13 +698,13 @@ void SwitchMmu::UpdateHeadroom(uint32_t port, uint32_t qIndex)
     uint64_t time = GetNowTimeWs();
     double aiheadVal = aiHeadroom[port][qIndex];
 
-    if (m_csvFile.is_open())
-    {
-        m_csvFile << port << ","
-                  << qIndex << ","
-                  << time << ","
-                  << aiheadVal << std::endl;
-    }
+    // if (m_csvFile.is_open())
+    // {
+    //     m_csvFile << port << ","
+    //               << qIndex << ","
+    //               << time << ","
+    //               << aiheadVal << std::endl;
+    // }
 
     SetHeadroom(aiheadVal, port, qIndex);
 }
@@ -853,12 +857,14 @@ void SwitchMmu::UpdataPauseTime(uint32_t port, uint32_t qIndex){
 			pauseTime[port][qIndex] += pqNowTime - pauseStartTime[port][qIndex];
 		}
 	}
-}
+} 
 
+//AASDT
 void SwitchMmu::SetThreshold(uint64_t threshold){
 	m_threshold = threshold;
 }
 
+//AASDT
 void SwitchMmu::SetRemaining(uint64_t remaining){
 	m_remaining = remaining;
 }
