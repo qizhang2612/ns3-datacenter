@@ -70,7 +70,7 @@ def predict_headroom(data_dict):
         output = model(X_tensor)
 
     predicted_value = scaler_y.inverse_transform(output.numpy())[0][0]
-    headroomRate = predicted_value / 1024 / 100 / 8  # 转换公式根据需要调整
+    headroomRate = predicted_value / 1024 / 100 # 转换公式根据需要调整
 
     return headroomRate
 
@@ -99,7 +99,8 @@ while True:
             headroom = predict_headroom(payload)
 
             # 返回结果
-            conn.sendall(f"{headroom:.6f}\n".encode('utf-8'))
+            conn.sendall(f"{headroom:.2f}\n".encode('utf-8'))
+            print(f"{headroom:.2f}\n".encode('utf-8'))
 
         except Exception as e:
             print("错误:", e)
